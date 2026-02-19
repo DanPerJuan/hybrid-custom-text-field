@@ -1,0 +1,11 @@
+analyzer:
+  errors:
+    todo: ignore
+    fixme: ignore
+
+linter:
+  rules:
+    - prefer_relative_imports
+
+formatter:
+  trailing_commas: preserve

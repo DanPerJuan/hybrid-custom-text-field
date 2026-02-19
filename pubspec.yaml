@@ -1,0 +1,22 @@
+name: hybrid_custom_text_field
+description: HybridCustomTextField widget allows creating customized CustomTextField with different styles
+version: 1.0.0
+homepage: https://rudo.es/
+repository: https://github.com/rudoapps/hybrid-custom-text-field.git
+issue_tracker: https://github.com/rudoapps/hybrid-custom-text-field/issues
+documentation: https://github.com/rudoapps/hybrid-custom-text-field#readme
+topics:
+  - calendar
+
+environment:
+  sdk: ">=3.8.6 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^9.1.1
+
+dev_dependencies:
+
+flutter:
+  uses-material-design: true
