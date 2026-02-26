@@ -10,6 +10,7 @@ class HybridTextFieldStyle {
   final TextStyle hintStyle;
   final TextStyle supportingTextStyle;
   final TextStyle descriptionStyle;
+  final TextStyle errorStyle;
 
   /// ── Colors ─────────────────────────────────────────────────────────────────
   final Color textColor;
@@ -29,49 +30,67 @@ class HybridTextFieldStyle {
   final Color errorFillColor;
 
   /// ── Inner border ───────────────────────────────────────────────────────────
-  final Color borderColor;
-  final Color focusedBorderColor;
-  final Color disabledBorderColor;
-  final Color errorBorderColor;
+  final Color? borderColor;
+  final Color? focusedBorderColor;
+  final Color? disabledBorderColor;
+  final Color? errorBorderColor;
   final double borderWidth;
   final double focusedBorderWidth;
   final BorderRadius borderRadius;
 
-  /// ── Outer border ───────────────────────────────────────────────────────────
+  /// ── double border ───────────────────────────────────────────────────────────
 
-  /// Activates the outer border ring. When null, double-border is disabled.
-  final Color? outerBorderColor;
+  /// Activates the double border ring. When null, double-border is disabled.
+  final Color? doubleBorderColor;
 
-  /// Color of the outer ring when focused. Falls back to [outerBorderColor].
-  final Color? outerFocusedBorderColor;
+  /// Color of the double ring when focused. Falls back to [doubleBorderColor].
+  final Color? doubleFocusedBorderColor;
 
-  /// Color of the outer ring on error. Falls back to [errorBorderColor].
-  final Color? outerErrorBorderColor;
+  /// Color of the double ring on error. Falls back to [errorBorderColor].
+  final Color? doubleErrorBorderColor;
 
-  /// Thickness of the outer ring. Default 2.0.
-  final double outerBorderWidth;
+  /// Thickness of the double ring. Default 2.0.
+  final double doubleBorderWidth;
 
-  /// Radius of the outer ring.
-  /// Defaults to [borderRadius] expanded by [outerBorderWidth] on each corner
+  /// Radius of the double ring.
+  /// Defaults to [borderRadius] expanded by [doubleBorderWidth] on each corner
   /// so it sits flush around the inner field without any gaps.
-  final BorderRadius? outerBorderRadius;
+  final BorderRadius? doubleBorderRadius;
 
-  /// Show outer ring when the field is focused. Default true.
-  final bool showOuterBorderOnFocus;
+  /// Show double ring when the field is focused. Default true.
+  final bool showDoubleBorderOnFocus;
 
-  /// Show outer ring when the field has an error. Default true.
-  final bool showOuterBorderOnError;
+  /// Show double ring when the field has an error. Default true.
+  final bool showDoubleBorderOnError;
 
   // ── Spacing / Layout ───────────────────────────────────────────────────────
   final EdgeInsets contentPadding;
   final double descriptionSpacing;
   final double supportingTextSpacing;
-  final double height;
+
+  final TextDirection? hintTextDirection;
+  final int? hintMaxLines;
+
+  final TextAlign textAlign;
+  final TextAlignVertical textAlignVertical;
+
+  // --- Computed getters con fallback ---
+  Color get getBorderColor => borderColor ?? Colors.grey;
+  Color get getFocusedBorderColor => focusedBorderColor ?? getBorderColor;
+  Color get getDisabledBorderColor => disabledBorderColor ?? getBorderColor;
+  Color get getErrorBorderColor => errorBorderColor ?? getBorderColor;
+
+  // Para el double border puedes mantener lo que ya hiciste antes
+  Color get getDoubleBorderColor => doubleBorderColor ?? getBorderColor;
+  Color get getDoubleFocusedBorderColor => doubleFocusedBorderColor ?? getFocusedBorderColor;
+  Color get getDoubleErrorBorderColor => doubleErrorBorderColor ?? getErrorBorderColor;
 
   const HybridTextFieldStyle({
+    double? doubleBorderRadius,
+
     /// ── Typography ──────────────────────────────────────────────────────────
     this.textStyle = const TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
-    this.labelStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+    this.labelStyle = const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
     this.hintStyle = const TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
     this.supportingTextStyle = const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
     this.descriptionStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
@@ -95,119 +114,44 @@ class HybridTextFieldStyle {
 
     /// ── Inner border ────────────────────────────────────────────────────────
     this.borderColor = HybridTextFieldColors.dustyGrayTint,
-    this.focusedBorderColor = HybridTextFieldColors.dustyGrayTint,
-    this.disabledBorderColor = HybridTextFieldColors.disabledBorder,
-    this.errorBorderColor = HybridTextFieldColors.errorRed,
+    this.focusedBorderColor,
+    this.disabledBorderColor,
+    this.errorBorderColor,
     this.borderWidth = 1.0,
     this.focusedBorderWidth = 1.5,
     this.borderRadius = const BorderRadius.all(Radius.circular(8)),
 
-    /// ── Outer border (double-border effect) ─────────────────────────────────
-    /// Leave [outerBorderColor] null to disable entirely.
-    this.outerBorderColor,
-    this.outerFocusedBorderColor,
-    this.outerErrorBorderColor,
-    this.outerBorderWidth = 2.0,
-    this.outerBorderRadius,
-    this.showOuterBorderOnFocus = true,
-    this.showOuterBorderOnError = true,
+    /// ── double border (double-border effect) ─────────────────────────────────
+    /// Leave [doubleBorderColor] null to disable entirely.
+    this.doubleBorderColor,
+    this.doubleFocusedBorderColor,
+    this.doubleErrorBorderColor,
+    this.doubleBorderWidth = 2.0,
+    this.showDoubleBorderOnFocus = false,
+    this.showDoubleBorderOnError = false,
 
     /// ── Spacing / Layout ────────────────────────────────────────────────────
-    this.contentPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    this.contentPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     this.descriptionSpacing = 8.0,
     this.supportingTextSpacing = 4.0,
-    this.height = 48.0,
-  });
+    this.errorStyle = const TextStyle(color: Colors.red, fontSize: 10),
+    this.hintTextDirection = TextDirection.ltr,
+    this.hintMaxLines,
+    this.textAlign = TextAlign.start,
+    this.textAlignVertical = TextAlignVertical.center,
+  }) : doubleBorderRadius = borderRadius;
 
   // ── Computed helpers ───────────────────────────────────────────────────────
 
-  /// Returns the outer ring radius, expanding each corner of [borderRadius]
-  /// by [outerBorderWidth] so the ring wraps the inner border perfectly.
-  BorderRadius get resolvedOuterBorderRadius {
-    return outerBorderRadius ??
+  /// Returns the double ring radius, expanding each corner of [borderRadius]
+  /// by [doubleBorderWidth] so the ring wraps the inner border perfectly.
+  BorderRadius get resolvedDoubleBorderRadius {
+    return doubleBorderRadius ??
         BorderRadius.only(
-          topLeft: Radius.circular(borderRadius.topLeft.x + outerBorderWidth),
-          topRight: Radius.circular(borderRadius.topRight.x + outerBorderWidth),
-          bottomLeft: Radius.circular(borderRadius.bottomLeft.x + outerBorderWidth),
-          bottomRight: Radius.circular(borderRadius.bottomRight.x + outerBorderWidth),
+          topLeft: Radius.circular(borderRadius.topLeft.x + doubleBorderWidth),
+          topRight: Radius.circular(borderRadius.topRight.x + doubleBorderWidth),
+          bottomLeft: Radius.circular(borderRadius.bottomLeft.x + doubleBorderWidth),
+          bottomRight: Radius.circular(borderRadius.bottomRight.x + doubleBorderWidth),
         );
-  }
-
-  HybridTextFieldStyle copyWith({
-    TextStyle? textStyle,
-    TextStyle? labelStyle,
-    TextStyle? hintStyle,
-    TextStyle? supportingTextStyle,
-    TextStyle? descriptionStyle,
-    Color? textColor,
-    Color? disabledTextColor,
-    Color? hintColor,
-    Color? labelColor,
-    Color? focusedLabelColor,
-    Color? errorLabelColor,
-    Color? supportingTextColor,
-    Color? errorTextColor,
-    Color? descriptionColor,
-    Color? cursorColor,
-    Color? fillColor,
-    Color? disabledFillColor,
-    Color? errorFillColor,
-    Color? borderColor,
-    Color? focusedBorderColor,
-    Color? disabledBorderColor,
-    Color? errorBorderColor,
-    double? borderWidth,
-    double? focusedBorderWidth,
-    BorderRadius? borderRadius,
-    Color? outerBorderColor,
-    Color? outerFocusedBorderColor,
-    Color? outerErrorBorderColor,
-    double? outerBorderWidth,
-    BorderRadius? outerBorderRadius,
-    bool? showOuterBorderOnFocus,
-    bool? showOuterBorderOnError,
-    EdgeInsets? contentPadding,
-    double? descriptionSpacing,
-    double? supportingTextSpacing,
-    double? height,
-  }) {
-    return HybridTextFieldStyle(
-      textStyle: textStyle ?? this.textStyle,
-      labelStyle: labelStyle ?? this.labelStyle,
-      hintStyle: hintStyle ?? this.hintStyle,
-      supportingTextStyle: supportingTextStyle ?? this.supportingTextStyle,
-      descriptionStyle: descriptionStyle ?? this.descriptionStyle,
-      textColor: textColor ?? this.textColor,
-      disabledTextColor: disabledTextColor ?? this.disabledTextColor,
-      hintColor: hintColor ?? this.hintColor,
-      labelColor: labelColor ?? this.labelColor,
-      focusedLabelColor: focusedLabelColor ?? this.focusedLabelColor,
-      errorLabelColor: errorLabelColor ?? this.errorLabelColor,
-      supportingTextColor: supportingTextColor ?? this.supportingTextColor,
-      errorTextColor: errorTextColor ?? this.errorTextColor,
-      descriptionColor: descriptionColor ?? this.descriptionColor,
-      cursorColor: cursorColor ?? this.cursorColor,
-      fillColor: fillColor ?? this.fillColor,
-      disabledFillColor: disabledFillColor ?? this.disabledFillColor,
-      errorFillColor: errorFillColor ?? this.errorFillColor,
-      borderColor: borderColor ?? this.borderColor,
-      focusedBorderColor: focusedBorderColor ?? this.focusedBorderColor,
-      disabledBorderColor: disabledBorderColor ?? this.disabledBorderColor,
-      errorBorderColor: errorBorderColor ?? this.errorBorderColor,
-      borderWidth: borderWidth ?? this.borderWidth,
-      focusedBorderWidth: focusedBorderWidth ?? this.focusedBorderWidth,
-      borderRadius: borderRadius ?? this.borderRadius,
-      outerBorderColor: outerBorderColor ?? this.outerBorderColor,
-      outerFocusedBorderColor: outerFocusedBorderColor ?? this.outerFocusedBorderColor,
-      outerErrorBorderColor: outerErrorBorderColor ?? this.outerErrorBorderColor,
-      outerBorderWidth: outerBorderWidth ?? this.outerBorderWidth,
-      outerBorderRadius: outerBorderRadius ?? this.outerBorderRadius,
-      showOuterBorderOnFocus: showOuterBorderOnFocus ?? this.showOuterBorderOnFocus,
-      showOuterBorderOnError: showOuterBorderOnError ?? this.showOuterBorderOnError,
-      contentPadding: contentPadding ?? this.contentPadding,
-      descriptionSpacing: descriptionSpacing ?? this.descriptionSpacing,
-      supportingTextSpacing: supportingTextSpacing ?? this.supportingTextSpacing,
-      height: height ?? this.height,
-    );
   }
 }
