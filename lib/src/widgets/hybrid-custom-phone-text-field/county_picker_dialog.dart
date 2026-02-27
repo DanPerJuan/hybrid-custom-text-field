@@ -65,8 +65,6 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
   @override
   void initState() {
     super.initState();
-
-    // Initialize selected country and filtered countries.
     _selectedCountry = widget.selectedCountry;
     _filteredCountries = widget.filteredCountries;
   }
@@ -74,19 +72,15 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      // Optional background color for the dialog.
       backgroundColor: widget.dialogBackgroundColor,
       child: Column(
         children: <Widget>[
-          /// Dialog title displayed at the top.
           ListTile(
             title: Text(
               widget.dialogTitle,
               textAlign: TextAlign.center,
             ),
           ),
-
-          /// Search bar to filter countries by name or dial code.
           Padding(
             padding: EdgeInsets.all(10),
             child: TextField(
@@ -95,10 +89,8 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
                   widget.searchFieldInputDecoration ??
                   InputDecoration(
                     suffixIcon: Icon(Icons.search),
-                    hintText: 'Busca tu país', // Default hint text
+                    hintText: 'Busca un país',
                   ),
-
-              /// Updates the filtered country list based on input.
               onChanged: (value) {
                 _filteredCountries = value.trim().isEmpty
                     ? widget.countryList
@@ -112,29 +104,21 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
                           )
                           .toList();
 
-                // Refresh UI when input changes.
                 if (mounted) setState(() {});
               },
             ),
           ),
-
-          /// List of countries to select from.
           Expanded(
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: _filteredCountries.length,
               itemBuilder: (ctx, index) => ListTile(
-                /// Display country flag.
                 leading: Text(
                   _filteredCountries[index].flag,
                 ),
-
-                /// Display country name.
                 title: Text(
                   _filteredCountries[index].name,
                 ),
-
-                /// Display country dial code.
                 trailing: Text(
                   '+${_filteredCountries[index].dialCode}',
                 ),

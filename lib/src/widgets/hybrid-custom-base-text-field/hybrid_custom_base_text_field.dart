@@ -126,10 +126,6 @@ class HybridCustomBaseTextField extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal StatefulWidget — isolates mutable UI state from the public API.
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _HybridCustomBaseTextFieldView extends StatefulWidget {
   final HybridCustomBaseTextField parent;
 
@@ -197,12 +193,10 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
                   child: _info(hasError: state.data.hasError),
                 ),
               Padding(
-                // Gap above and below the field container.
                 padding: EdgeInsetsGeometry.only(top: 8, bottom: 5),
                 child: _textField(state),
               ),
               if (widget.parent.bottom != null) _bottomMessage(),
-              // Null-aware spread: renders nothing when _errorMessage returns null.
               ?_errorMessage(state),
             ],
           );
@@ -210,8 +204,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
       ),
     );
   }
-
-  // ── Sub-widgets ────────────────────────────────────────────────────────────
 
   /// Renders the [info] label above the field. Color is [errorTextColor] on
   /// error, otherwise [descriptionColor].
@@ -244,7 +236,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
         child: TextFormField(
           focusNode: _focusNode,
           controller: _controller,
-          // Surfaces the bloc error message so Form.validate() works correctly.
           validator: (value) {
             if (state.data.hasError) {
               return state.data.errorMessage;
@@ -266,12 +257,10 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
             color: widget.parent.enable ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
           ),
           onChanged: (value) {
-            // Dispatch the changed event so the bloc runs validation rules.
             _bloc.add(HybridCustomTextFieldChanged(value: value));
             widget.parent.onChanged?.call(value);
           },
           onTap: () => widget.parent.onTap?.call(),
-          // Record pointer-down to detect real taps vs. drag endings.
           onTapOutside: (event) => _lastTapPosition = event.position,
           onTapUpOutside: (event) {
             if (_lastTapPosition == event.position) {
@@ -292,9 +281,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
       isDense: false,
       filled: true,
       fillColor: widget.parent.enable ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
-      // `error` (Widget) instead of `errorText` prevents Flutter from
-      // reserving extra vertical space for the error string. The actual
-      // message is rendered in a separate widget below the field.
       error: state.data.hasError ? const SizedBox.shrink() : null,
       hintTextDirection: widget.parent.style.hintTextDirection,
       hintMaxLines: widget.parent.style.hintMaxLines,
@@ -314,13 +300,9 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
       errorBorder: _errorBorder(),
       focusedErrorBorder: _errorBorder(),
       errorText: null,
-      // Zero-height error style prevents the field from jumping vertically;
-      // the message is rendered separately via _errorMessage.
       errorStyle: const TextStyle(height: 0, fontSize: 0),
     );
   }
-
-  // ── Border helpers ─────────────────────────────────────────────────────────
 
   /// Creates a [FloatingLabelOutlineInputBorder] with [color] and [width].
   FloatingLabelOutlineInputBorder _border(Color color, double width) {
@@ -353,8 +335,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     _focusNode.hasFocus ? widget.parent.style.getFocusedBorderColor : widget.parent.style.getErrorBorderColor,
     widget.parent.style.borderWidth,
   );
-
-  // ── Double border ──────────────────────────────────────────────────────────
 
   /// Returns `true` when the outer double-border decoration should be visible.
   ///
@@ -389,8 +369,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     return s.doubleBorderColor ?? s.getBorderColor;
   }
 
-  // ── Icons ──────────────────────────────────────────────────────────────────
-
   /// Builds the suffix icon:
   /// - **Password field** → tap-to-toggle visibility using custom icons from
   ///   the config or default Material eye icons.
@@ -408,8 +386,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     return null;
   }
 
-  // ── Bottom / error text ────────────────────────────────────────────────────
-
   /// Supporting text shown below the field when there is no validation error.
   Widget _bottomMessage() {
     return SizedBox(
@@ -419,13 +395,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   }
 
   /// Renders the validation error message below the field.
-  ///
-  /// Visibility is governed by [HybridBaseTextFieldConfig.shouldDisplayErrorWhenClicked]:
-  /// - `false` → always visible when there is an active error.
-  /// - `true`  → visible only while the field has focus.
-  ///
-  /// Returns `null` when conditions are not met; the null-aware spread (`?`)
-  /// at the call site ensures no widget is inserted.
   Widget? _errorMessage(HybridCustomTextFieldState state) {
     return state.data.hasError && !widget.parent.config.shouldDisplayErrorWhenClicked ||
             state.data.hasError && widget.parent.config.shouldDisplayErrorWhenClicked && _focusNode.hasFocus

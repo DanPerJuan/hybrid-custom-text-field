@@ -86,10 +86,6 @@ class HybridCustomPhoneTextField extends StatelessWidget {
   /// Fixed height of the field container in logical pixels. Defaults to `62`.
   final double containerHeight;
 
-  /// When `true`, the country picker is presented as a [Dialog].
-  /// When `false` (default), it is presented as a modal bottom sheet.
-  final bool showDialog;
-
   /// Creates a [HybridCustomPhoneTextField].
   HybridCustomPhoneTextField({
     super.key,
@@ -108,7 +104,6 @@ class HybridCustomPhoneTextField extends StatelessWidget {
     this.focusNode,
     HybridPhoneTextFieldConfig? config,
     HybridTextFieldStyle? style,
-    this.showDialog = false,
     this.containerHeight = 62,
   }) : style = style ?? HybridTextField.style,
        config = config ?? HybridTextField.phoneConfig;
@@ -125,10 +120,6 @@ class HybridCustomPhoneTextField extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal StatefulWidget — isolates mutable UI state from the public API.
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _CustomPhoneTextFieldView extends StatefulWidget {
   final HybridCustomPhoneTextField parent;
@@ -170,7 +161,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     super.dispose();
   }
 
-  /// Triggers a rebuild whenever focus is gained or lost.
   void _onFocusChange() => setState(() {});
 
   @override
@@ -195,7 +185,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
                 child: _phoneField(state),
               ),
               if (widget.parent.bottom != null) _bottomMessage(),
-              // Null-aware spread: renders nothing when _errorMessage returns null.
               ?_errorMessage(state),
             ],
           );
@@ -203,8 +192,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
       ),
     );
   }
-
-  // ── Sub-widgets ────────────────────────────────────────────────────────────
 
   /// Renders the [info] label above the field.
   Widget _info({required bool hasError}) {
@@ -255,8 +242,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     );
   }
 
-  // ── Double border ──────────────────────────────────────────────────────────
-
   /// Returns `true` when the outer double-border decoration should be visible.
   bool _shouldShowDouble(bool hasError) {
     final s = widget.parent.style;
@@ -291,8 +276,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     if (hasError) return s.getErrorBorderColor;
     return s.getBorderColor;
   }
-
-  // ── Prefix button ──────────────────────────────────────────────────────────
 
   /// Builds the tappable country-prefix button on the left side of the field.
   ///
@@ -336,7 +319,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
                 ),
               ),
               Icon(Icons.arrow_drop_down),
-              // Vertical divider separating the prefix from the number input.
               Container(
                 margin: EdgeInsets.only(right: 8),
                 height: widget.parent.containerHeight / 2,
@@ -353,7 +335,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   /// Opens the country picker as a modal bottom sheet or dialog depending on
   /// [HybridCustomPhoneTextField.showDialog].
   void _showPrefixesList() async {
-    return !widget.parent.showDialog
+    return !widget.parent.config.showDialog
         ? showModalBottomSheet(
             context: context,
             builder: (context) => _bodyModalBottomSheet(),
@@ -387,7 +369,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drag handle.
           Center(
             child: SizedBox(
               width: 40,
@@ -449,8 +430,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     }
   }
 
-  // ── Text field ─────────────────────────────────────────────────────────────
-
   /// Builds the phone number [TextFormField] without any border decoration
   /// (borders are handled by [_phoneField]).
   Widget _textfield(HybridCustomTextFieldState state) {
@@ -474,12 +453,10 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
         color: widget.parent.enable ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
       ),
       onChanged: (value) {
-        // Dispatches the changed event so the bloc runs validation rules.
         _bloc.add(HybridCustomTextFieldChanged(value: value));
         widget.parent.onChanged?.call(value);
       },
       onTap: () => widget.parent.onTap?.call(),
-      // Record pointer-down position for drag detection in onTapUpOutside.
       onTapOutside: (event) => _lastTapPosition = event.position,
       onTapUpOutside: (event) {
         if (_lastTapPosition == event.position) {
@@ -499,7 +476,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
       border: InputBorder.none,
       filled: true,
       fillColor: widget.parent.enable ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
-      // `error` (Widget) prevents Flutter from reserving extra height.
       error: state.data.hasError ? const SizedBox.shrink() : null,
       hintTextDirection: widget.parent.style.hintTextDirection,
       hintMaxLines: widget.parent.style.hintMaxLines,
@@ -511,12 +487,9 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
       suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       contentPadding: EdgeInsets.all(widget.parent.containerHeight / 4),
       errorText: null,
-      // Zero-height error style prevents the field from jumping vertically.
       errorStyle: const TextStyle(height: 0, fontSize: 0),
     );
   }
-
-  // ── Error / bottom text ────────────────────────────────────────────────────
 
   /// Renders the validation error message below the field.
   ///
@@ -534,7 +507,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   }
 
   /// Trailing icon for the phone number input.
-  /// Uses the consumer-provided [suffixIcon] or renders nothing.
   Widget? _suffixIcon() {
     if (widget.parent.suffixIcon != null) return widget.parent.suffixIcon;
     return null;

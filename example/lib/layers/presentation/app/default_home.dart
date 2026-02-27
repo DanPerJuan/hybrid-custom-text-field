@@ -19,17 +19,16 @@ class DefaultHome extends StatelessWidget {
       Country('Germany', 'DE', Icon(Icons.battery_2_bar)),
     ];
 
-    final collages = [
-      Collage('Argentina', 1, Icon(Icons.flag_outlined)),
-      Collage('Antigua', 2, Icon(Icons.back_hand)),
-      Collage('Spain', 4, Icon(Icons.cabin)),
-      Collage('France', 7, Icon(Icons.dangerous)),
-      Collage('Germany', 9, Icon(Icons.earbuds)),
-      Collage('Germany', 5, Icon(Icons.face)),
-      Collage('Germany', 8, Icon(Icons.face_2)),
-      Collage('Germany', 11, Icon(Icons.qr_code)),
-      Collage('Antarctica', 3, Icon(Icons.abc)),
-      Collage('Germany', 0, Icon(Icons.battery_2_bar)),
+    final numbers = [
+      1,
+      4,
+      3,
+      5,
+      9,
+      6,
+      2,
+      7,
+      8,
     ];
 
     return Scaffold(
@@ -101,8 +100,8 @@ class DefaultHome extends StatelessWidget {
               onPrefixSelected: (country) {},
               onChanged: (phoneNumber) {},
               controller: TextEditingController(),
-              showDialog: true,
               config: HybridPhoneTextFieldConfig(
+                showDialog: true,
                 isRequired: true,
                 countryViewOptions: CountryViewOptions.countryCodeWithFlag,
               ),
@@ -119,16 +118,6 @@ class DefaultHome extends StatelessWidget {
               config: HybridSearchTextFieldConfig(
                 sortOrder: SearchSortOrder.alphabetical,
               ),
-            ),
-
-            HybridCustomSearchTextField(
-              controller: TextEditingController(),
-              label: 'Selecciona el numero',
-              items: collages,
-              displayText: (item) => item.name,
-              onItemSelected: (item) {
-                debugPrint('Selected: ${item.name}');
-              },
               itemBuilder: (item) {
                 return Card(
                   child: Row(
@@ -137,13 +126,23 @@ class DefaultHome extends StatelessWidget {
                       item.icon,
                       Text(item.name),
                       Spacer(),
-                      Text("${item.phone}€"),
+                      Text("${item.code}€"),
                       SizedBox(width: 10),
                     ],
                   ),
                 );
               },
-              sortValue: (item) => item.phone,
+            ),
+
+            HybridCustomSearchTextField(
+              controller: TextEditingController(),
+              label: 'Selecciona dias de vacaciones',
+              items: numbers,
+              displayText: (item) => item.toString(),
+              onItemSelected: (item) {
+                debugPrint('Selected: ${item}');
+              },
+              sortValue: (item) => item,
               config: HybridSearchTextFieldConfig(
                 sortOrder: SearchSortOrder.numericAscending,
               ),
@@ -161,12 +160,4 @@ class Country {
   final Icon icon;
 
   Country(this.name, this.code, this.icon);
-}
-
-class Collage {
-  final String name;
-  final int phone;
-  final Icon icon;
-
-  Collage(this.name, this.phone, this.icon);
 }

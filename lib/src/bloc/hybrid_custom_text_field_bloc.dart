@@ -145,11 +145,11 @@ class HybridCustomTextFieldBloc extends Bloc<HybridCustomTextFieldEvent, HybridC
     HybridCustomTextFieldChanged event,
     Emitter<HybridCustomTextFieldState> emit,
   ) async {
-    final hasError = state.data.validations.any((v) => !v.validate(event.value));
+    final hasError = state.data.validations.any((v) => !v.validate(event.value.trim()));
 
     ValidationTextFieldEntity? error;
     if (hasError) {
-      error = state.data.validations.firstWhere((v) => !v.validate(event.value));
+      error = state.data.validations.firstWhere((v) => !v.validate(event.value.trim()));
     }
 
     emit(
@@ -172,14 +172,15 @@ class HybridCustomTextFieldBloc extends Bloc<HybridCustomTextFieldEvent, HybridC
     Emitter<HybridCustomTextFieldState> emit,
   ) async {
     final validations = [...state.data.validations];
+    final validation = state.data.selectedCountry;
 
     // Remove the old phone length rule before adding the updated one.
-    validations.removeWhere((v) => v == ValidationConstants.phone);
+    validations.removeWhere((v) => v.regex == RegExp('^[0-9]{${validation.minLength},${validation.maxLength}}\$'));
 
     validations.add(
       ValidationConstants.phone(
-        min: event.country.minLength - 1,
-        max: event.country.maxLength - 1,
+        min: event.country.minLength,
+        max: event.country.maxLength,
       ),
     );
 

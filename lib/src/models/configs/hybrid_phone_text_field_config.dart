@@ -51,6 +51,10 @@ class HybridPhoneTextFieldConfig extends HybridTextFieldConfig {
   /// - [CountryViewOptions.countryNameWithFlag] — e.g. `🇪🇸 Spain`
   final CountryViewOptions countryViewOptions;
 
+  /// When `true`, the country picker is presented as a [Dialog].
+  /// When `false` (default), it is presented as a modal bottom sheet.
+  final bool showDialog;
+
   /// Creates a [HybridPhoneTextFieldConfig].
   ///
   /// All parameters are optional. [countryViewOptions] defaults to
@@ -63,6 +67,7 @@ class HybridPhoneTextFieldConfig extends HybridTextFieldConfig {
     this.validations,
     this.shouldDisplayErrorWhenClicked = false,
     this.textInputAction = TextInputAction.done,
+    this.showDialog = false,
   });
 
   /// Returns a copy of this config with the given fields replaced.
@@ -76,6 +81,7 @@ class HybridPhoneTextFieldConfig extends HybridTextFieldConfig {
     bool? isRequired,
     List<ValidationTextFieldEntity>? validations,
     bool? shouldDisplayErrorWhenClicked,
+    bool? showDialog,
   }) {
     return HybridPhoneTextFieldConfig(
       textInputAction: textInputAction ?? this.textInputAction,
@@ -85,6 +91,7 @@ class HybridPhoneTextFieldConfig extends HybridTextFieldConfig {
       isRequired: isRequired ?? this.isRequired,
       validations: validations ?? this.validations,
       shouldDisplayErrorWhenClicked: shouldDisplayErrorWhenClicked ?? this.shouldDisplayErrorWhenClicked,
+      showDialog: showDialog ?? this.showDialog,
     );
   }
 }

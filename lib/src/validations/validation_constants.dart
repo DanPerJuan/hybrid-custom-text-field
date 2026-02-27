@@ -52,4 +52,37 @@ abstract class ValidationConstants {
       regex: RegExp('^[0-9]{$min,$max}\$'),
     );
   }
+
+  /// Validation rule to check that a text is a valid URL.
+  ///
+  /// Accepts URLs with or without protocol (http/https),
+  /// including domain and optional path or query parameters.
+  static ValidationTextFieldEntity url({
+    String errorMessage = 'URL inválida',
+  }) => ValidationTextFieldEntity(
+    errorMessage: errorMessage,
+    regex: RegExp(r'^(https?:\/\/)?([\w\d-]+\.)+\w{2,}(\/[\w\d-./?%&=]*)?$'),
+  );
+
+  /// Validation rule to check that a text is a valid email address.
+  ///
+  /// Ensures the email contains:
+  /// - Local part (before @)
+  /// - Domain name
+  /// - Valid domain extension (2–4 characters)
+  static ValidationTextFieldEntity email({
+    String errorMessage = 'Email inválido',
+  }) => ValidationTextFieldEntity(
+    errorMessage: errorMessage,
+    regex: RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$'),
+  );
+
+  /// Validation rule for DNI-like formats requiring at least
+  /// one uppercase letter in the text.
+  static ValidationTextFieldEntity dni({
+    String errorMessage = 'Debe contener al menos una letra mayúscula',
+  }) => ValidationTextFieldEntity(
+    errorMessage: errorMessage,
+    regex: RegExp(r'^(?=.*[A-Z]).+$'),
+  );
 }

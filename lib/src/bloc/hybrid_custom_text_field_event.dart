@@ -61,7 +61,7 @@ class HybridCustomTextFieldSearchChanged extends HybridCustomTextFieldEvent {
 /// Can optionally sort using [sortOrder] and [sortValue], and uses [displayText] to display items.
 class HybridCustomTextFieldSearchTapped extends HybridCustomTextFieldEvent {
   final SearchSortOrder? sortOrder;
-  final num Function(dynamic item)? sortValue;
+  final int Function(dynamic item)? sortValue;
   String Function(dynamic item) displayText;
 
   HybridCustomTextFieldSearchTapped({

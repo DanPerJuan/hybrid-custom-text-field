@@ -1,3 +1,4 @@
+import '../../hybrid_custom_text_field.dart';
 import '../models/configs/hybryd_text_field_config.dart';
 import '../models/entities/validation_text_field_entity.dart';
 import '../validations/validation_constants.dart';
@@ -25,6 +26,18 @@ class ValidationUtils {
           } else if (max != null) {
             validations.add(ValidationConstants.maxLength(max));
           }
+        case _ValidationFlag.email:
+          if (config is HybridBaseTextFieldConfig && config.validationType == HybridTextFieldValidationType.email) {
+            validations.add(ValidationConstants.email());
+          }
+        case _ValidationFlag.url:
+          if (config is HybridBaseTextFieldConfig && config.validationType == HybridTextFieldValidationType.url) {
+            validations.add(ValidationConstants.url());
+          }
+        case _ValidationFlag.dni:
+          if (config is HybridBaseTextFieldConfig && config.validationType == HybridTextFieldValidationType.dni) {
+            validations.add(ValidationConstants.dni());
+          }
       }
     }
 
@@ -41,4 +54,7 @@ class ValidationUtils {
 enum _ValidationFlag {
   isRequired,
   length,
+  email,
+  url,
+  dni,
 }

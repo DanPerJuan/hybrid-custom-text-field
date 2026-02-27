@@ -118,7 +118,7 @@ class HybridCustomSearchTextField<T> extends StatelessWidget {
   /// ```dart
   /// sortValue: (item) => item.price,
   /// ```
-  final num Function(dynamic item)? sortValue;
+  final int Function(dynamic item)? sortValue;
 
   /// Creates a [HybridCustomSearchTextField].
   ///
@@ -161,10 +161,6 @@ class HybridCustomSearchTextField<T> extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal StatefulWidget — isolates mutable UI state from the public API.
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _HybridCustomSearchTextFieldView<T> extends StatefulWidget {
   final HybridCustomSearchTextField<T> parent;
@@ -225,25 +221,19 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
     _overlayEntry = null;
   }
 
-  /// Triggers a rebuild whenever focus is gained or lost.
   void _onFocusChange() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<HybridCustomTextFieldBloc, HybridCustomTextFieldState>(
-      // Only listen when filteredItems reference changes to avoid unnecessary
-      // overlay rebuilds.
       listenWhen: (previous, current) => previous.data.filteredItems != current.data.filteredItems,
       listener: (context, state) {
         _controller;
       },
       child: BlocBuilder<HybridCustomTextFieldBloc, HybridCustomTextFieldState>(
         builder: (context, state) {
-          // After the frame is rendered, decide whether to show, refresh or
-          // hide the overlay based on the latest bloc state.
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (state.data.showResults && state.data.filteredItems.isNotEmpty && _focusNode.hasFocus) {
-              // Always recreate the overlay so it reflects the current state.
               if (_overlayEntry == null) {
                 _showOverlay(state);
               } else {
@@ -251,8 +241,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
                 _showOverlay(state);
               }
             } else {
-              // Close the overlay when focus is lost after a short delay so
-              // a tap on a result row can register before the overlay disappears.
               _focusNode.addListener(() {
                 if (!_focusNode.hasFocus) {
                   Future.delayed(
@@ -276,7 +264,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
               _textField(state: state),
               const SizedBox(height: 5),
               if (widget.parent.bottom != null) _bottomMessage(),
-              // Null-aware spread: renders nothing when _errorMessage returns null.
               ?_errorMessage(state: state),
             ],
           );
@@ -284,8 +271,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       ),
     );
   }
-
-  // ── Sub-widgets ────────────────────────────────────────────────────────────
 
   /// Renders the [info] label above the field.
   /// Color is [errorTextColor] on error, otherwise [descriptionColor].
@@ -323,7 +308,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
           child: TextFormField(
             focusNode: _focusNode,
             controller: _controller,
-            // Surfaces the bloc error message so Form.validate() works.
             validator: (value) {
               if (state.data.hasError) return state.data.errorMessage;
               return null;
@@ -340,19 +324,15 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
               color: widget.parent.enable ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
             ),
             onChanged: (value) {
-              // Filters the list on every keystroke using displayText.
-              // The overlay is shown/refreshed in the postFrameCallback above.
               _bloc.add(
                 HybridCustomTextFieldSearchChanged(
-                  value: value,
+                  value: value.toString(),
                   displayText: widget.parent.displayText,
                 ),
               );
               widget.parent.onChanged?.call(value);
             },
             onTap: () {
-              // Shows the overlay with the current list, applying the
-              // configured sort order before displaying results.
               _bloc.add(
                 HybridCustomTextFieldSearchTapped(
                   sortOrder: widget.parent.config.sortOrder,
@@ -363,7 +343,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
               widget.parent.onTap?.call();
             },
             onTapOutside: (event) {
-              // Dismiss the overlay and record position for drag detection.
               _bloc.add(HybridCustomTextFieldSearchDismissed());
               _lastTapPosition = event.position;
             },
@@ -412,8 +391,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       isDense: false,
       filled: true,
       fillColor: widget.parent.enable ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
-      // `error` (Widget) prevents Flutter from reserving extra height for the
-      // error string while still triggering the error border color.
       error: state.data.hasError ? const SizedBox.shrink() : null,
       hintTextDirection: widget.parent.style.hintTextDirection,
       hintMaxLines: widget.parent.style.hintMaxLines,
@@ -425,10 +402,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       suffixIcon: _suffixIcon(),
       labelText: widget.parent.label,
       suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-      contentPadding: EdgeInsets.symmetric(
-        vertical: (widget.parent.containerHeight - widget.parent.style.textStyle.fontSize!) / 2.2,
-        horizontal: 12,
-      ),
+      contentPadding: widget.parent.style.contentPadding,
       border: _enabledBorder(state.data.hasError),
       enabledBorder: _enabledBorder(state.data.hasError),
       focusedBorder: _focusedBorder(state.data.hasError),
@@ -439,8 +413,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       errorStyle: const TextStyle(height: 0, fontSize: 0),
     );
   }
-
-  // ── Border helpers ─────────────────────────────────────────────────────────
 
   FloatingLabelOutlineInputBorder _border(Color color, double width) {
     return FloatingLabelOutlineInputBorder(
@@ -470,8 +442,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
     _focusNode.hasFocus ? widget.parent.style.getFocusedBorderColor : widget.parent.style.getErrorBorderColor,
     widget.parent.style.borderWidth,
   );
-
-  // ── Overlay ────────────────────────────────────────────────────────────────
 
   /// Inserts a new [OverlayEntry] positioned directly below the field using
   /// [CompositedTransformFollower] anchored to [_layerLink].
@@ -527,7 +497,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
         physics: ClampingScrollPhysics(),
         itemCount: state.data.filteredItems.length,
         itemBuilder: (context, index) {
-          // Cast is safe: allItems was populated with List<T>.
           final item = state.data.filteredItems[index] as T;
           return _resultItem(item);
         },
@@ -563,8 +532,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
     );
   }
 
-  // ── Icons ──────────────────────────────────────────────────────────────────
-
   /// Leading icon: consumer-provided [prefixIcon] or a default search icon.
   Widget _prefixIcon() {
     if (widget.parent.prefixIcon != null) return widget.parent.prefixIcon!;
@@ -596,8 +563,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
     return null;
   }
 
-  // ── Bottom / error text ────────────────────────────────────────────────────
-
   /// Supporting text shown below the field when there is no error.
   Widget _bottomMessage() {
     return SizedBox(
@@ -612,10 +577,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   }
 
   /// Renders the validation error message below the field.
-  ///
-  /// Visibility follows [HybridSearchTextFieldConfig.shouldDisplayErrorWhenClicked]:
-  /// - `false` → always visible when there is an active error.
-  /// - `true`  → visible only while the field has focus.
   Widget? _errorMessage({required HybridCustomTextFieldState state}) {
     return state.data.hasError && !widget.parent.config.shouldDisplayErrorWhenClicked ||
             state.data.hasError && widget.parent.config.shouldDisplayErrorWhenClicked && _focusNode.hasFocus

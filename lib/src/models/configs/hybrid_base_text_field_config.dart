@@ -93,6 +93,8 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
   /// Falls back to [Icons.visibility_off_outlined] when `null`.
   final Widget? passwordHiddenImage;
 
+  final HybridTextFieldValidationType? validationType;
+
   /// Creates a [HybridBaseTextFieldConfig].
   ///
   /// All parameters are optional and fall back to sensible defaults so the
@@ -113,6 +115,7 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
     this.shouldDisplayErrorWhenClicked = false,
     this.passwordVisibleImage,
     this.passwordHiddenImage,
+    this.validationType,
   });
 
   /// Returns a copy of this config with the given fields replaced.
@@ -129,6 +132,12 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
     List<TextInputFormatter>? inputFormatters,
     bool? obscureText,
     bool? isRequired,
+    int? minLength,
+    List<ValidationTextFieldEntity>? validations,
+    bool? shouldDisplayErrorWhenClicked,
+    Widget? passwordVisibleImage,
+    Widget? passwordHiddenImage,
+    HybridTextFieldValidationType? validationType,
   }) {
     return HybridBaseTextFieldConfig(
       keyboardType: keyboardType ?? this.keyboardType,
@@ -141,6 +150,18 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
       inputFormatters: inputFormatters ?? this.inputFormatters,
       obscureText: obscureText ?? this.obscureText,
       isRequired: isRequired ?? this.isRequired,
+      minLength: minLength ?? this.minLength,
+      validations: validations ?? this.validations,
+      shouldDisplayErrorWhenClicked: shouldDisplayErrorWhenClicked ?? this.shouldDisplayErrorWhenClicked,
+      passwordVisibleImage: passwordVisibleImage ?? this.passwordVisibleImage,
+      passwordHiddenImage: passwordHiddenImage ?? this.passwordHiddenImage,
+      validationType: validationType ?? this.validationType,
     );
   }
+}
+
+enum HybridTextFieldValidationType {
+  email,
+  url,
+  dni,
 }
