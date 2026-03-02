@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/hybrid_text_field_colors.dart';
+import 'country_picker_dialog_style.dart';
+import 'custom_prefixes_list_style.dart';
 
 /// Visual style configuration for [BaseTextField] and all its variants.
 class HybridTextFieldStyle {
@@ -74,6 +76,9 @@ class HybridTextFieldStyle {
   final TextAlign textAlign;
   final TextAlignVertical textAlignVertical;
 
+  final CustomPrefixesListStyle prefixesListStyle;
+  final CountryPickerDialogStyle dialogStyle;
+
   // --- Computed getters con fallback ---
   Color get getBorderColor => borderColor ?? Colors.grey;
   Color get getFocusedBorderColor => focusedBorderColor ?? getBorderColor;
@@ -139,6 +144,8 @@ class HybridTextFieldStyle {
     this.hintMaxLines,
     this.textAlign = TextAlign.start,
     this.textAlignVertical = TextAlignVertical.center,
+    this.prefixesListStyle = const CustomPrefixesListStyle(),
+    this.dialogStyle = const CountryPickerDialogStyle(),
   }) : doubleBorderRadius = borderRadius;
 
   // ── Computed helpers ───────────────────────────────────────────────────────

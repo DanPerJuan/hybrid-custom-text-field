@@ -41,6 +41,16 @@ class HybridSearchTextFieldConfig extends HybridTextFieldConfig {
   /// Defaults to [SearchSortOrder.none] — original list order.
   final SearchSortOrder sortOrder;
 
+  /// Extracts a numeric value from an item for numeric sort orders.
+  ///
+  /// Required when [HybridSearchTextFieldConfig.sortOrder] is
+  /// [SearchSortOrder.numericAscending] or [SearchSortOrder.numericDescending].
+  ///
+  /// ```dart
+  /// sortValue: (item) => item.price,
+  /// ```
+  final int Function(dynamic item)? sortValue;
+
   HybridSearchTextFieldConfig({
     this.textInputAction = TextInputAction.search,
     this.maxLength,
@@ -52,6 +62,7 @@ class HybridSearchTextFieldConfig extends HybridTextFieldConfig {
     this.keyboardType = TextInputType.text,
     this.textCapitalization = TextCapitalization.none,
     this.inputFormatters,
+    this.sortValue,
   });
 
   HybridSearchTextFieldConfig copyWith({
@@ -62,6 +73,7 @@ class HybridSearchTextFieldConfig extends HybridTextFieldConfig {
     bool? shouldDisplayErrorWhenClicked,
     List<ValidationTextFieldEntity>? validations,
     SearchSortOrder? sortOrder,
+    int Function(dynamic item)? sortValue,
   }) {
     return HybridSearchTextFieldConfig(
       textInputAction: textInputAction ?? this.textInputAction,
@@ -71,6 +83,7 @@ class HybridSearchTextFieldConfig extends HybridTextFieldConfig {
       shouldDisplayErrorWhenClicked: shouldDisplayErrorWhenClicked ?? this.shouldDisplayErrorWhenClicked,
       validations: validations ?? this.validations,
       sortOrder: sortOrder ?? this.sortOrder,
+      sortValue: sortValue ?? this.sortValue,
     );
   }
 }

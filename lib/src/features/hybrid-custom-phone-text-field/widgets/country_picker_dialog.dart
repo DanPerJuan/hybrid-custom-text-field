@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../models/entities/country_entity.dart';
+import '../../../models/entities/country_entity.dart';
+import '../../../style/country_picker_dialog_style.dart';
 
 /// A dialog that allows users to pick a country from a list.
 ///
@@ -27,11 +28,7 @@ class CountryPickerDialog extends StatefulWidget {
   /// Title displayed at the top of the dialog.
   final String dialogTitle;
 
-  /// Optional text style for the search input field.
-  final TextStyle? searchTextStyle;
-
-  /// Background color of the dialog.
-  final Color? dialogBackgroundColor;
+  final CountryPickerDialogStyle style;
 
   /// Creates a country picker dialog.
   const CountryPickerDialog({
@@ -42,8 +39,7 @@ class CountryPickerDialog extends StatefulWidget {
     required this.filteredCountries,
     this.searchFieldInputDecoration,
     required this.dialogTitle,
-    required this.searchTextStyle,
-    this.dialogBackgroundColor,
+    required this.style,
   });
 
   @override
@@ -72,7 +68,10 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: widget.dialogBackgroundColor,
+      alignment: widget.style.alignment,
+      insetPadding: widget.style.insetPadding,
+      backgroundColor: widget.style.backgroundColor,
+      elevation: widget.style.elevation,
       child: Column(
         children: <Widget>[
           ListTile(
@@ -81,15 +80,21 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
               textAlign: TextAlign.center,
             ),
           ),
-          Padding(
-            padding: EdgeInsets.all(10),
+          Container(
+            decoration: BoxDecoration(borderRadius: widget.style.searchStyle.borderRadius),
+            padding: widget.style.searchStyle.outerPadding,
             child: TextField(
-              style: widget.searchTextStyle,
+              style: widget.style.searchStyle.textStyle,
               decoration:
                   widget.searchFieldInputDecoration ??
                   InputDecoration(
-                    suffixIcon: Icon(Icons.search),
+                    border: widget.style.searchStyle.border,
+                    suffixIcon: widget.style.searchStyle.suffixIcon,
                     hintText: 'Busca un país',
+                    hintStyle: widget.style.searchStyle.hintStyle,
+                    fillColor: widget.style.searchStyle.fillColor,
+                    focusedBorder: widget.style.searchStyle.focusedBorder,
+                    contentPadding: widget.style.searchStyle.contentPadding,
                   ),
               onChanged: (value) {
                 _filteredCountries = value.trim().isEmpty

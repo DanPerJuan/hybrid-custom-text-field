@@ -80,9 +80,9 @@ abstract class ValidationConstants {
   /// Validation rule for DNI-like formats requiring at least
   /// one uppercase letter in the text.
   static ValidationTextFieldEntity dni({
-    String errorMessage = 'Debe contener al menos una letra mayúscula',
+    String errorMessage = 'Debe tener 9 caracteres y al menos una letra mayúscula',
   }) => ValidationTextFieldEntity(
     errorMessage: errorMessage,
-    regex: RegExp(r'^(?=.*[A-Z]).+$'),
+    regex: RegExp(r'^(?=.*[A-Z]).{9}$'),
   );
 }

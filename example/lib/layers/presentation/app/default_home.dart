@@ -67,38 +67,31 @@ class DefaultHome extends StatelessWidget {
               info: 'Registro del usuario',
               hint: '123456789',
               label: 'DNI',
-              //containerHeight: 100,
               suffixIcon: Padding(
                 padding: EdgeInsetsGeometry.symmetric(horizontal: 10),
                 child: Icon(Icons.abc),
-              ), // si esta el de contraseña no funciona
+              ),
               bottom: 'Escribe solo el numero de tu DNI',
               controller: TextEditingController(),
-              enable: true, // no cambia pero no te deja clicar
-              isPassword: false, // añadir el poder cambiar el icono de la contraseña
+              enable: true,
+              isPassword: false,
               prefixIcon: Padding(padding: EdgeInsetsGeometry.symmetric(horizontal: 10), child: Icon(Icons.person)),
-              config: HybridBaseTextFieldConfig(isRequired: true, minLength: 2, maxLength: 5),
+              config: HybridBaseTextFieldConfig(
+                isRequired: true,
+                validationType: HybridTextFieldValidationType.dni,
+              ),
             ),
 
-            /*HybridCustomBaseTextField(
-              label: 'Nombre (Opcional)',
-              //containerHeight: 100,
-              suffixIcon: Padding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 10),
-                child: Icon(Icons.abc),
-              ), // si esta el de contraseña no funciona
-              controller: TextEditingController(),
-              enable: true, // no cambia pero no te deja clicar
-              isPassword: false, // añadir el poder cambiar el icono de la contraseña
-              prefixIcon: Padding(padding: EdgeInsetsGeometry.symmetric(horizontal: 10), child: Icon(Icons.person)),
-              config: HybridBaseTextFieldConfig(isRequired: false, minLength: 2, maxLength: 5),
-            ),*/
             HybridCustomPhoneTextField(
               label: 'Telefono',
               info: 'Informacion del telefono',
               bottom: 'Numero de telefono',
               onPrefixSelected: (country) {},
-              onChanged: (phoneNumber) {},
+              onChanged: (phoneNumber, hasError) {
+                if (hasError) {
+                  print('Kowalski tenemos un problema');
+                }
+              },
               controller: TextEditingController(),
               config: HybridPhoneTextFieldConfig(
                 showDialog: true,
@@ -142,9 +135,9 @@ class DefaultHome extends StatelessWidget {
               onItemSelected: (item) {
                 debugPrint('Selected: ${item}');
               },
-              sortValue: (item) => item,
               config: HybridSearchTextFieldConfig(
                 sortOrder: SearchSortOrder.numericAscending,
+                sortValue: (item) => item,
               ),
             ),
           ],

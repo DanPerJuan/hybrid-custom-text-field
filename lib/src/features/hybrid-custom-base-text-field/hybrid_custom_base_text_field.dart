@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../hybrid_custom_text_field.dart';
-import '../../bloc/hybrid_custom_text_field_bloc.dart';
 import '../../utils/floating_label_outline_input_border.dart';
+import 'bloc/hybrid_custom_base_text_field_bloc.dart';
 
 /// A customizable text field with built-in validation, error display and an
 /// optional password-visibility toggle.
 ///
-/// The field is backed by an internal [HybridCustomTextFieldBloc] that manages
-/// validation state. Each keystroke dispatches [HybridCustomTextFieldChanged];
+/// The field is backed by an internal [HybridCustomBaseTextFieldBloc] that manages
+/// validation state. Each keystroke dispatches [HybridCustomBaseTextFieldChanged];
 /// the bloc runs all configured rules and the widget reacts to the resulting
 /// state to update border colors and show or hide the error message.
 ///
@@ -58,8 +58,8 @@ class HybridCustomBaseTextField extends StatelessWidget {
   /// and [HybridBaseTextFieldConfig.passwordHiddenImage].
   final bool isPassword;
 
-  /// Called on every keystroke with the current field value.
-  final ValueChanged<String>? onChanged;
+  /// Callback triggered when the text changes, returning the current value and whether the field contains a validation error.
+  final void Function(String, bool)? onChanged;
 
   /// Called when the user taps the field.
   final VoidCallback? onTap;
@@ -120,7 +120,7 @@ class HybridCustomBaseTextField extends StatelessWidget {
     return BlocProvider(
       // Provide an isolated bloc instance and immediately fire the started
       // event so validations are loaded from the config.
-      create: (context) => HybridCustomTextFieldBloc(config: config)..add(HybridCustomTextFieldStarted()),
+      create: (context) => HybridCustomBaseTextFieldBloc(config: config)..add(HybridCustomBaseTextFieldStarted()),
       child: _HybridCustomBaseTextFieldView(parent: this),
     );
   }
@@ -148,7 +148,7 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   Offset _lastTapPosition = Offset.zero;
 
   /// Shortcut to the bloc. Reads without subscribing to rebuilds.
-  HybridCustomTextFieldBloc get _bloc => context.read<HybridCustomTextFieldBloc>();
+  HybridCustomBaseTextFieldBloc get _bloc => context.read<HybridCustomBaseTextFieldBloc>();
 
   /// Controller — either provided by the parent or created locally.
   late TextEditingController _controller;
@@ -177,11 +177,11 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<HybridCustomTextFieldBloc, HybridCustomTextFieldState>(
+    return BlocListener<HybridCustomBaseTextFieldBloc, HybridCustomBaseTextFieldState>(
       listener: (context, state) {
         _controller;
       },
-      child: BlocBuilder<HybridCustomTextFieldBloc, HybridCustomTextFieldState>(
+      child: BlocBuilder<HybridCustomBaseTextFieldBloc, HybridCustomBaseTextFieldState>(
         builder: (context, state) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +218,7 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
 
   /// Builds the main text field wrapped in an [AnimatedContainer] that renders
   /// the optional outer double-border decoration with a 150 ms transition.
-  Widget _textField(HybridCustomTextFieldState state) {
+  Widget _textField(HybridCustomBaseTextFieldState state) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       decoration: _shouldShowDouble(state.data.hasError)
@@ -257,8 +257,8 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
             color: widget.parent.enable ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
           ),
           onChanged: (value) {
-            _bloc.add(HybridCustomTextFieldChanged(value: value));
-            widget.parent.onChanged?.call(value);
+            _bloc.add(HybridCustomBaseTextFieldChanged(value: value));
+            widget.parent.onChanged?.call(value, state.data.hasError);
           },
           onTap: () => widget.parent.onTap?.call(),
           onTapOutside: (event) => _lastTapPosition = event.position,
@@ -276,7 +276,7 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
 
   /// Builds the full [InputDecoration] with all border variants, fill color,
   /// hint/label text and icon slots.
-  InputDecoration _inputDecoration(HybridCustomTextFieldState state) {
+  InputDecoration _inputDecoration(HybridCustomBaseTextFieldState state) {
     return InputDecoration(
       isDense: false,
       filled: true,
@@ -395,7 +395,8 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   }
 
   /// Renders the validation error message below the field.
-  Widget? _errorMessage(HybridCustomTextFieldState state) {
+
+  Widget? _errorMessage(HybridCustomBaseTextFieldState state) {
     return state.data.hasError && !widget.parent.config.shouldDisplayErrorWhenClicked ||
             state.data.hasError && widget.parent.config.shouldDisplayErrorWhenClicked && _focusNode.hasFocus
         ? SizedBox(

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../hybrid_custom_text_field.dart';
-import '../../bloc/hybrid_custom_text_field_bloc.dart';
-import 'county_picker_dialog.dart';
-import 'custom_phone_prefixes_list.dart';
+import 'bloc/hybrid_custom_phone_text_field_bloc.dart';
+import 'widgets/country_picker_dialog.dart';
+import 'widgets/custom_phone_prefixes_list.dart';
 
 /// A phone number input field with a country-prefix selector.
 ///
@@ -13,7 +13,7 @@ import 'custom_phone_prefixes_list.dart';
 /// with a plain number input. Tapping the prefix opens a country picker either
 /// as a modal bottom sheet (default) or as a dialog, controlled by [showDialog].
 ///
-/// The field is backed by an internal [HybridCustomTextFieldBloc] that:
+/// The field is backed by an internal [HybridCustomPhoneTextFieldBloc] that:
 /// - Loads the full country list and validation rules on mount.
 /// - Updates the phone length validation rule whenever the user changes the
 ///   prefix ([HybridCustomTextFieldCountryChanged]).
@@ -56,7 +56,7 @@ class HybridCustomPhoneTextField extends StatelessWidget {
   final Function(CountryEntity country)? onPrefixSelected;
 
   /// Called on every keystroke with the current field value.
-  final ValueChanged<String>? onChanged;
+  final void Function(String, bool)? onChanged;
 
   /// Called when the user taps the phone number input.
   final VoidCallback? onTap;
@@ -114,8 +114,8 @@ class HybridCustomPhoneTextField extends StatelessWidget {
       // Provide an isolated bloc instance. HybridCustomTextFieldPhoneStarted
       // loads the country list and validation rules.
       create: (context) =>
-          HybridCustomTextFieldBloc(config: config)
-            ..add(HybridCustomTextFieldPhoneStarted(selectedCountry: selectedCountry)),
+          HybridCustomPhoneTextFieldBloc(config: config)
+            ..add(HybridCustomPhoneTextFieldStarted(selectedCountry: selectedCountry)),
       child: _CustomPhoneTextFieldView(parent: this),
     );
   }
@@ -138,7 +138,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   Offset _lastTapPosition = Offset.zero;
 
   /// Shortcut to the bloc without subscribing to rebuilds.
-  HybridCustomTextFieldBloc get _bloc => context.read<HybridCustomTextFieldBloc>();
+  HybridCustomPhoneTextFieldBloc get _bloc => context.read<HybridCustomPhoneTextFieldBloc>();
 
   /// Controller — either provided by the parent or created locally.
   late TextEditingController _controller;
@@ -165,11 +165,11 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<HybridCustomTextFieldBloc, HybridCustomTextFieldState>(
+    return BlocListener<HybridCustomPhoneTextFieldBloc, HybridCustomPhoneTextFieldState>(
       listener: (context, state) {
         _controller;
       },
-      child: BlocBuilder<HybridCustomTextFieldBloc, HybridCustomTextFieldState>(
+      child: BlocBuilder<HybridCustomPhoneTextFieldBloc, HybridCustomPhoneTextFieldState>(
         builder: (context, state) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,7 +205,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
 
   /// Builds the phone field container: an [AnimatedContainer] for the optional
   /// double-border, wrapping a [Row] with the prefix button and the text input.
-  Widget _phoneField(HybridCustomTextFieldState state) {
+  Widget _phoneField(HybridCustomPhoneTextFieldState state) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       decoration: _shouldShowDouble(state.data.hasError)
@@ -345,14 +345,13 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
             useRootNavigator: false,
             builder: (context) => StatefulBuilder(
               builder: (ctx, setState) => CountryPickerDialog(
+                style: widget.parent.style.dialogStyle,
                 filteredCountries: _bloc.state.data.filteredCountries,
                 countryList: _bloc.state.data.countries,
                 selectedCountry: _bloc.state.data.selectedCountry,
-                dialogBackgroundColor: widget.parent.style.fillColor,
                 dialogTitle: 'Selecciona el prefijo del pais',
-                searchTextStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 onCountryChanged: (CountryEntity country) {
-                  _bloc.add(HybridCustomTextFieldCountryChanged(country: country));
+                  _bloc.add(HybridCustomPhoneTextFieldCountryChanged(country: country));
                 },
               ),
             ),
@@ -391,8 +390,10 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
             child: CustomPhonePrefixesList(
               countries: _bloc.state.data.countries,
               selectedPrefix: _bloc.state.data.selectedCountry,
+              config: widget.parent.config,
+              style: widget.parent.style.prefixesListStyle,
               onPrefixSelected: (country) {
-                _bloc.add(HybridCustomTextFieldCountryChanged(country: country));
+                _bloc.add(HybridCustomPhoneTextFieldCountryChanged(country: country));
                 widget.parent.onPrefixSelected;
               },
             ),
@@ -432,7 +433,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
 
   /// Builds the phone number [TextFormField] without any border decoration
   /// (borders are handled by [_phoneField]).
-  Widget _textfield(HybridCustomTextFieldState state) {
+  Widget _textfield(HybridCustomPhoneTextFieldState state) {
     return TextFormField(
       focusNode: _focusNode,
       controller: _controller,
@@ -453,8 +454,8 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
         color: widget.parent.enable ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
       ),
       onChanged: (value) {
-        _bloc.add(HybridCustomTextFieldChanged(value: value));
-        widget.parent.onChanged?.call(value);
+        _bloc.add(HybridCustomPhoneTextFieldChanged(value: value));
+        widget.parent.onChanged?.call(value, state.data.hasError);
       },
       onTap: () => widget.parent.onTap?.call(),
       onTapOutside: (event) => _lastTapPosition = event.position,
@@ -470,7 +471,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
 
   /// Builds the [InputDecoration] for the phone input — borderless, since
   /// the outer [_phoneField] container draws the border.
-  InputDecoration _inputDecoration(HybridCustomTextFieldState state) {
+  InputDecoration _inputDecoration(HybridCustomPhoneTextFieldState state) {
     return InputDecoration(
       isDense: true,
       border: InputBorder.none,
@@ -496,7 +497,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   /// Visibility follows [HybridPhoneTextFieldConfig.shouldDisplayErrorWhenClicked]:
   /// - `false` → always visible when there is an active error.
   /// - `true`  → visible only while the field has focus.
-  Widget? _errorMessage(HybridCustomTextFieldState state) {
+  Widget? _errorMessage(HybridCustomPhoneTextFieldState state) {
     return state.data.hasError && !widget.parent.config.shouldDisplayErrorWhenClicked ||
             state.data.hasError && widget.parent.config.shouldDisplayErrorWhenClicked && _focusNode.hasFocus
         ? SizedBox(

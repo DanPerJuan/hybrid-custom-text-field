@@ -19,9 +19,11 @@ void main() async {
       errorBorderColor: Colors.red[900],
       doubleErrorBorderColor: Colors.red,
       borderRadius: BorderRadius.circular(30),
+      prefixesListStyle: CustomPrefixesListStyle(radioColor: Colors.grey.shade800),
     ),
     baseConfig: HybridBaseTextFieldConfig(),
     phoneConfig: HybridPhoneTextFieldConfig(),
+    searchConfig: HybridSearchTextFieldConfig(),
   );
 
   runApp(

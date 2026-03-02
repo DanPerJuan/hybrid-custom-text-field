@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../hybrid_custom_text_field.dart';
-import '../../bloc/hybrid_custom_text_field_bloc.dart';
 import '../../utils/floating_label_outline_input_border.dart';
+import 'bloc/hybrid_custom_search_text_field_bloc.dart';
 
 /// A generic search text field that shows a floating overlay with filtered
 /// results as the user types.
 ///
-/// The field is backed by [HybridCustomTextFieldBloc]. The full item list is
+/// The field is backed by [HybridCustomSearchTextFieldBloc]. The full item list is
 /// loaded on init, and filtering is delegated to the bloc through
 /// [HybridCustomTextFieldSearchChanged] and [HybridCustomTextFieldSearchTapped].
 ///
@@ -53,7 +53,7 @@ class HybridCustomSearchTextField<T> extends StatelessWidget {
   final TextEditingController? controller;
 
   /// Called on every keystroke with the current field value.
-  final ValueChanged<String>? onChanged;
+  final void Function(String, bool)? onChanged;
 
   /// Called when the user taps the field (after the bloc event is dispatched).
   final VoidCallback? onTap;
@@ -110,16 +110,6 @@ class HybridCustomSearchTextField<T> extends StatelessWidget {
   /// Defaults to a white rounded card with a subtle shadow.
   final BoxDecoration? resultsDecoration;
 
-  /// Extracts a numeric value from an item for numeric sort orders.
-  ///
-  /// Required when [HybridSearchTextFieldConfig.sortOrder] is
-  /// [SearchSortOrder.numericAscending] or [SearchSortOrder.numericDescending].
-  ///
-  /// ```dart
-  /// sortValue: (item) => item.price,
-  /// ```
-  final int Function(dynamic item)? sortValue;
-
   /// Creates a [HybridCustomSearchTextField].
   ///
   /// [items], [displayText] and [onItemSelected] are required.
@@ -147,7 +137,6 @@ class HybridCustomSearchTextField<T> extends StatelessWidget {
     this.itemBuilder,
     this.resultsMaxHeight = 200,
     this.resultsDecoration,
-    this.sortValue,
   }) : style = style ?? HybridTextField.style,
        config = config ?? HybridTextField.searchConfig;
 
@@ -156,7 +145,7 @@ class HybridCustomSearchTextField<T> extends StatelessWidget {
     return BlocProvider(
       // Provide an isolated bloc and immediately load the item list.
       create: (context) =>
-          HybridCustomTextFieldBloc(config: config)..add(HybridCustomTextFieldSearchStarted(items: items)),
+          HybridCustomSearchTextFieldBloc(config: config)..add(HybridCustomSearchTextFieldStarted(items: items)),
       child: _HybridCustomSearchTextFieldView<T>(parent: this),
     );
   }
@@ -180,7 +169,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   Offset _lastTapPosition = Offset.zero;
 
   /// Shortcut to the bloc. Reads without subscribing to rebuilds.
-  HybridCustomTextFieldBloc get _bloc => context.read<HybridCustomTextFieldBloc>();
+  HybridCustomSearchTextFieldBloc get _bloc => context.read<HybridCustomSearchTextFieldBloc>();
 
   /// [LayerLink] that anchors the overlay to the field's position on screen.
   final LayerLink _layerLink = LayerLink();
@@ -199,9 +188,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   void initState() {
     _focusNode = widget.parent.focusNode ?? FocusNode();
     _controller = widget.parent.controller ?? TextEditingController();
-    // Rebuild on focus changes so border colors update immediately.
     _focusNode.addListener(_onFocusChange);
-    // Rebuild when text changes so the clear/search suffix icon reacts.
     _controller.addListener(() => setState(() {}));
     super.initState();
   }
@@ -225,12 +212,12 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<HybridCustomTextFieldBloc, HybridCustomTextFieldState>(
+    return BlocListener<HybridCustomSearchTextFieldBloc, HybridCustomSearchTextFieldState>(
       listenWhen: (previous, current) => previous.data.filteredItems != current.data.filteredItems,
       listener: (context, state) {
         _controller;
       },
-      child: BlocBuilder<HybridCustomTextFieldBloc, HybridCustomTextFieldState>(
+      child: BlocBuilder<HybridCustomSearchTextFieldBloc, HybridCustomSearchTextFieldState>(
         builder: (context, state) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (state.data.showResults && state.data.filteredItems.isNotEmpty && _focusNode.hasFocus) {
@@ -287,7 +274,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   ///
   /// Wrapped in a [CompositedTransformTarget] so the floating results overlay
   /// can track the field's position via [_layerLink].
-  Widget _textField({required HybridCustomTextFieldState state}) {
+  Widget _textField({required HybridCustomSearchTextFieldState state}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       decoration: _shouldShowDouble(state.data.hasError)
@@ -325,25 +312,23 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
             ),
             onChanged: (value) {
               _bloc.add(
-                HybridCustomTextFieldSearchChanged(
+                HybridCustomSearchTextFieldChanged(
                   value: value.toString(),
                   displayText: widget.parent.displayText,
                 ),
               );
-              widget.parent.onChanged?.call(value);
+              widget.parent.onChanged?.call(value, state.data.hasError);
             },
             onTap: () {
               _bloc.add(
-                HybridCustomTextFieldSearchTapped(
-                  sortOrder: widget.parent.config.sortOrder,
-                  sortValue: widget.parent.sortValue,
+                HybridCustomSearchTextFieldTapped(
                   displayText: widget.parent.displayText,
                 ),
               );
               widget.parent.onTap?.call();
             },
             onTapOutside: (event) {
-              _bloc.add(HybridCustomTextFieldSearchDismissed());
+              _bloc.add(HybridCustomSearchTextFieldDismissed());
               _lastTapPosition = event.position;
             },
             onTapUpOutside: (event) {
@@ -386,7 +371,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   }
 
   /// Builds the full [InputDecoration].
-  InputDecoration _inputDecoration(HybridCustomTextFieldState state) {
+  InputDecoration _inputDecoration(HybridCustomSearchTextFieldState state) {
     return InputDecoration(
       isDense: false,
       filled: true,
@@ -448,7 +433,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   ///
   /// Any existing overlay is removed first so the list always reflects the
   /// current bloc state.
-  void _showOverlay(HybridCustomTextFieldState state) {
+  void _showOverlay(HybridCustomSearchTextFieldState state) {
     _removeOverlay();
 
     final overlay = Overlay.of(context, rootOverlay: true);
@@ -465,7 +450,6 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
           child: CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
-            // Position the overlay 4px below the field.
             offset: Offset(0, size.height + 4),
             child: Material(
               elevation: 6,
@@ -481,7 +465,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   }
 
   /// Builds the scrollable results list shown inside the overlay.
-  Widget _resultsList(HybridCustomTextFieldState state) {
+  Widget _resultsList(HybridCustomSearchTextFieldState state) {
     return Container(
       constraints: BoxConstraints(maxHeight: widget.parent.resultsMaxHeight),
       decoration:
@@ -515,7 +499,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       final text = widget.parent.displayText(item);
       _controller.text = text;
       _controller.selection = TextSelection.collapsed(offset: text.length);
-      _bloc.add(HybridCustomTextFieldItemSelected(item: item));
+      _bloc.add(HybridCustomSearchTextFieldItemSelected(item: item));
       widget.parent.onItemSelected(item);
     }
 
@@ -577,7 +561,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   }
 
   /// Renders the validation error message below the field.
-  Widget? _errorMessage({required HybridCustomTextFieldState state}) {
+  Widget? _errorMessage({required HybridCustomSearchTextFieldState state}) {
     return state.data.hasError && !widget.parent.config.shouldDisplayErrorWhenClicked ||
             state.data.hasError && widget.parent.config.shouldDisplayErrorWhenClicked && _focusNode.hasFocus
         ? SizedBox(
