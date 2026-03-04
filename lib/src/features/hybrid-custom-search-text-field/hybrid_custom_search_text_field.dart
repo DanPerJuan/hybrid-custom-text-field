@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../hybrid_custom_text_field.dart';
 import '../../utils/floating_label_outline_input_border.dart';
+import '../hybrid-custom-text-field-form/bloc/hybrid_custom_text_field_form_bloc.dart';
+import '../hybrid_library_field_class.dart';
 import 'bloc/hybrid_custom_search_text_field_bloc.dart';
 
 /// A generic search text field that shows a floating overlay with filtered
@@ -35,7 +37,7 @@ import 'bloc/hybrid_custom_search_text_field_bloc.dart';
 ///   ),
 /// )
 /// ```
-class HybridCustomSearchTextField<T> extends StatelessWidget {
+class HybridCustomSearchTextField<T> extends HybridLibraryField {
   /// Placeholder text shown inside the field when it is empty.
   final String? hint;
 
@@ -110,6 +112,10 @@ class HybridCustomSearchTextField<T> extends StatelessWidget {
   /// Defaults to a white rounded card with a subtle shadow.
   final BoxDecoration? resultsDecoration;
 
+  final bool showDivider;
+
+  final Widget? divider;
+
   /// Creates a [HybridCustomSearchTextField].
   ///
   /// [items], [displayText] and [onItemSelected] are required.
@@ -137,24 +143,50 @@ class HybridCustomSearchTextField<T> extends StatelessWidget {
     this.itemBuilder,
     this.resultsMaxHeight = 200,
     this.resultsDecoration,
+    this.showDivider = false,
+    this.divider,
   }) : style = style ?? HybridTextField.style,
        config = config ?? HybridTextField.searchConfig;
 
   @override
   Widget build(BuildContext context) {
+    final scope = HybridFormScope.maybeOf(context);
+
     return BlocProvider(
-      // Provide an isolated bloc and immediately load the item list.
-      create: (context) =>
-          HybridCustomSearchTextFieldBloc(config: config)..add(HybridCustomSearchTextFieldStarted(items: items)),
-      child: _HybridCustomSearchTextFieldView<T>(parent: this),
+      /// Provide an isolated bloc instance and immediately fire the started
+      /// event so validations are loaded from the config.
+      create: (_) {
+        final fieldBloc = HybridCustomSearchTextFieldBloc(config: config)
+          ..add(HybridCustomSearchTextFieldStarted(items: items));
+
+        /// If inside a form, ask the form bloc to compute the merged validation
+        /// list (field validations first, form validations appended).
+        /// The form bloc responds with HybridCustomTextFieldFormValidationsReady,
+        /// which the BlocListener below forwards to this field's bloc.
+        if (scope != null) {
+          scope.formBloc.add(
+            HybridCustomTextFieldFormFieldStarted(
+              fieldConfig: config,
+              fieldId: scope.fieldId,
+            ),
+          );
+        }
+
+        return fieldBloc;
+      },
+      child: _HybridCustomSearchTextFieldView<T>(
+        parent: this,
+        scope: scope,
+      ),
     );
   }
 }
 
 class _HybridCustomSearchTextFieldView<T> extends StatefulWidget {
   final HybridCustomSearchTextField<T> parent;
+  final HybridFormScope? scope;
 
-  const _HybridCustomSearchTextFieldView({required this.parent});
+  const _HybridCustomSearchTextFieldView({required this.parent, this.scope});
 
   @override
   State<_HybridCustomSearchTextFieldView<T>> createState() => _HybridCustomSearchTextFieldViewState<T>();
@@ -217,29 +249,52 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       listener: (context, state) {
         _controller;
       },
-      child: BlocBuilder<HybridCustomSearchTextFieldBloc, HybridCustomSearchTextFieldState>(
-        builder: (context, state) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (state.data.showResults && state.data.filteredItems.isNotEmpty && _focusNode.hasFocus) {
-              if (_overlayEntry == null) {
-                _showOverlay(state);
-              } else {
-                _removeOverlay();
-                _showOverlay(state);
-              }
-            } else {
-              _focusNode.addListener(() {
-                if (!_focusNode.hasFocus) {
-                  Future.delayed(
-                    const Duration(milliseconds: 150),
-                    () => _removeOverlay(),
+      child: widget.scope != null
+          ? BlocListener<HybridCustomTextFieldFormBloc, HybridCustomTextFieldFormState>(
+              bloc: widget.scope!.formBloc,
+              listenWhen: (_, state) =>
+                  state is HybridCustomTextFieldFormSuccess && state.data.fieldId == widget.scope!.fieldId,
+              listener: (_, state) {
+                if (state is HybridCustomTextFieldFormSuccess) {
+                  _bloc.add(
+                    HybridCustomBaseTextFieldFormValidationsReceived(
+                      mergedValidations: state.data.validations,
+                    ),
                   );
                 }
-              });
-            }
-          });
+              },
+              child: _body(),
+            )
+          : _body(),
+    );
+  }
 
-          return Column(
+  BlocBuilder<HybridCustomSearchTextFieldBloc, HybridCustomSearchTextFieldState> _body() {
+    return BlocBuilder<HybridCustomSearchTextFieldBloc, HybridCustomSearchTextFieldState>(
+      builder: (context, state) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (state.data.showResults && state.data.filteredItems.isNotEmpty && _focusNode.hasFocus) {
+            if (_overlayEntry == null) {
+              _showOverlay(state);
+            } else {
+              _removeOverlay();
+              _showOverlay(state);
+            }
+          } else {
+            _focusNode.addListener(() {
+              if (!_focusNode.hasFocus) {
+                Future.delayed(
+                  const Duration(milliseconds: 150),
+                  () => _removeOverlay(),
+                );
+              }
+            });
+          }
+        });
+
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 2),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -253,9 +308,9 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
               if (widget.parent.bottom != null) _bottomMessage(),
               ?_errorMessage(state: state),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -387,7 +442,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       suffixIcon: _suffixIcon(),
       labelText: widget.parent.label,
       suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-      contentPadding: widget.parent.style.contentPadding,
+      contentPadding: widget.parent.style.contentPadding, // ?? EdgeInsets.all(widget.parent.containerHeight / 4),
       border: _enabledBorder(state.data.hasError),
       enabledBorder: _enabledBorder(state.data.hasError),
       focusedBorder: _focusedBorder(state.data.hasError),
@@ -482,7 +537,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
         itemCount: state.data.filteredItems.length,
         itemBuilder: (context, index) {
           final item = state.data.filteredItems[index] as T;
-          return _resultItem(item);
+          return _resultItem(item: item, isLast: index == state.data.filteredItems.length - 1);
         },
       ),
     );
@@ -492,9 +547,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   ///
   /// Uses the consumer-provided [itemBuilder] when available. Falls back to a
   /// default [ListTile] that renders [displayText].
-  Widget _resultItem(T item) {
-    // Shared selection handler — writes the display string into the controller
-    // and notifies the bloc and the consumer callback.
+  Widget _resultItem({required T item, required bool isLast}) {
     void onSelect() {
       final text = widget.parent.displayText(item);
       _controller.text = text;
@@ -503,16 +556,29 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       widget.parent.onItemSelected(item);
     }
 
-    if (widget.parent.itemBuilder != null) {
-      return InkWell(onTap: onSelect, child: widget.parent.itemBuilder!(item));
+    final content = widget.parent.itemBuilder != null
+        ? InkWell(onTap: onSelect, child: widget.parent.itemBuilder!(item))
+        : ListTile(
+            dense: true,
+            title: Text(
+              widget.parent.displayText(item),
+              style: widget.parent.style.textStyle.copyWith(
+                color: widget.parent.style.textColor,
+              ),
+            ),
+            onTap: onSelect,
+          );
+
+    if (!widget.parent.showDivider || isLast) {
+      return content;
     }
-    return ListTile(
-      dense: true,
-      title: Text(
-        widget.parent.displayText(item),
-        style: widget.parent.style.textStyle.copyWith(color: widget.parent.style.textColor),
-      ),
-      onTap: onSelect,
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        content,
+        widget.parent.divider ?? const Divider(height: 1),
+      ],
     );
   }
 

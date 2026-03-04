@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../hybrid_custom_text_field.dart';
+import '../../utils/date_input_formatter.dart';
 import '../../utils/floating_label_outline_input_border.dart';
+import '../hybrid-custom-text-field-form/bloc/hybrid_custom_text_field_form_bloc.dart';
+import '../hybrid_library_field_class.dart';
 import 'bloc/hybrid_custom_base_text_field_bloc.dart';
 
 /// A customizable text field with built-in validation, error display and an
@@ -32,7 +35,7 @@ import 'bloc/hybrid_custom_base_text_field_bloc.dart';
 ///   config: HybridBaseTextFieldConfig(minLength: 8),
 /// )
 /// ```
-class HybridCustomBaseTextField extends StatelessWidget {
+class HybridCustomBaseTextField extends HybridLibraryField {
   /// Placeholder text shown inside the field when it is empty.
   final String? hint;
 
@@ -117,19 +120,39 @@ class HybridCustomBaseTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scope = HybridFormScope.maybeOf(context);
+
     return BlocProvider(
-      // Provide an isolated bloc instance and immediately fire the started
-      // event so validations are loaded from the config.
-      create: (context) => HybridCustomBaseTextFieldBloc(config: config)..add(HybridCustomBaseTextFieldStarted()),
-      child: _HybridCustomBaseTextFieldView(parent: this),
+      /// Provide an isolated bloc instance and immediately fire the started
+      /// event so validations are loaded from the config.
+      create: (_) {
+        final fieldBloc = HybridCustomBaseTextFieldBloc(config: config)..add(HybridCustomBaseTextFieldStarted());
+
+        /// If inside a form, ask the form bloc to compute the merged validation
+        /// list (field validations first, form validations appended).
+        /// The form bloc responds with HybridCustomTextFieldFormValidationsReady,
+        /// which the BlocListener below forwards to this field's bloc.
+        if (scope != null) {
+          scope.formBloc.add(
+            HybridCustomTextFieldFormFieldStarted(
+              fieldConfig: config,
+              fieldId: scope.fieldId,
+            ),
+          );
+        }
+
+        return fieldBloc;
+      },
+      child: _HybridCustomBaseTextFieldView(parent: this, scope: scope),
     );
   }
 }
 
 class _HybridCustomBaseTextFieldView extends StatefulWidget {
   final HybridCustomBaseTextField parent;
+  final HybridFormScope? scope;
 
-  _HybridCustomBaseTextFieldView({required this.parent});
+  _HybridCustomBaseTextFieldView({required this.parent, this.scope});
 
   @override
   State<_HybridCustomBaseTextFieldView> createState() => _HybridCustomBaseTextFieldViewState();
@@ -153,13 +176,15 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   /// Controller — either provided by the parent or created locally.
   late TextEditingController _controller;
 
+  /// Key used to measure the rendered size of the field so the overlay can
+  /// match its width.
+  final GlobalKey _fieldKey = GlobalKey();
+
   @override
   void initState() {
     _focusNode = widget.parent.focusNode ?? FocusNode();
     _controller = widget.parent.controller ?? TextEditingController();
-    // Rebuild on focus changes so border colors update immediately.
     _focusNode.addListener(_onFocusChange);
-    // Rebuild when text changes so the suffix icon (e.g. clear) can react.
     _controller.addListener(() => setState(() {}));
     isObscuringText = widget.parent.isPassword;
     super.initState();
@@ -172,18 +197,35 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     super.dispose();
   }
 
-  /// Triggers a rebuild whenever focus is gained or lost.
   void _onFocusChange() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<HybridCustomBaseTextFieldBloc, HybridCustomBaseTextFieldState>(
-      listener: (context, state) {
-        _controller;
-      },
-      child: BlocBuilder<HybridCustomBaseTextFieldBloc, HybridCustomBaseTextFieldState>(
-        builder: (context, state) {
-          return Column(
+    return widget.scope != null
+        ? BlocListener<HybridCustomTextFieldFormBloc, HybridCustomTextFieldFormState>(
+            bloc: widget.scope!.formBloc,
+            listenWhen: (_, state) =>
+                state is HybridCustomTextFieldFormSuccess && state.data.fieldId == widget.scope!.fieldId,
+            listener: (_, state) {
+              if (state is HybridCustomTextFieldFormSuccess) {
+                _bloc.add(
+                  HybridCustomBaseTextFieldFormValidationsReceived(
+                    mergedValidations: state.data.validations,
+                  ),
+                );
+              }
+            },
+            child: _body(),
+          )
+        : _body();
+  }
+
+  Widget _body() {
+    return BlocBuilder<HybridCustomBaseTextFieldBloc, HybridCustomBaseTextFieldState>(
+      builder: (context, state) {
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 2),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -199,9 +241,9 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
               if (widget.parent.bottom != null) _bottomMessage(),
               ?_errorMessage(state),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -231,7 +273,8 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
               ),
             )
           : const BoxDecoration(),
-      child: SizedBox(
+      child: Container(
+        key: _fieldKey,
         height: widget.parent.containerHeight,
         child: TextFormField(
           focusNode: _focusNode,
@@ -246,10 +289,16 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
           obscureText: isObscuringText,
           textAlign: widget.parent.style.textAlign,
           textAlignVertical: widget.parent.style.textAlignVertical,
-          keyboardType: widget.parent.config.keyboardType,
+          keyboardType: widget.parent.config.dateFormatterType != null
+              ? TextInputType.datetime
+              : widget.parent.config.keyboardType,
           textInputAction: widget.parent.config.textInputAction,
           textCapitalization: widget.parent.config.textCapitalization,
-          inputFormatters: widget.parent.config.inputFormatters,
+          inputFormatters: [
+            if (widget.parent.config.dateFormatterType != null)
+              DateInputFormatter(widget.parent.config.dateFormatterType!),
+            ...?widget.parent.config.inputFormatters,
+          ],
           maxLines: widget.parent.config.singleLine ? 1 : widget.parent.config.maxLines,
           minLines: widget.parent.config.singleLine ? 1 : widget.parent.config.minLines,
           cursorColor: widget.parent.style.cursorColor,
@@ -292,7 +341,12 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
       suffixIcon: _suffixIcon(),
       labelText: widget.parent.label,
       suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-      contentPadding: widget.parent.style.contentPadding,
+      contentPadding: widget.parent.label == null
+          ? EdgeInsets.symmetric(
+              horizontal: widget.parent.containerHeight / 4,
+              vertical: widget.parent.containerHeight / 3.2,
+            )
+          : widget.parent.style.contentPadding,
       border: _enabledBorder(state.data.hasError),
       enabledBorder: _enabledBorder(state.data.hasError),
       focusedBorder: _focusedBorder(state.data.hasError),
@@ -375,11 +429,20 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   /// - **Otherwise** → [HybridCustomBaseTextField.suffixIcon] or `null`.
   Widget? _suffixIcon() {
     if (widget.parent.isPassword) {
-      return InkWell(
-        child: isObscuringText
-            ? widget.parent.config.passwordVisibleImage ?? Icon(Icons.visibility_outlined, color: Color(0xFFBDBDBD))
-            : widget.parent.config.passwordHiddenImage ?? Icon(Icons.visibility_off_outlined, color: Color(0xFFBDBDBD)),
-        onTap: () => setState(() => isObscuringText = !isObscuringText),
+      return Padding(
+        padding: EdgeInsetsGeometry.symmetric(horizontal: 10),
+        child: Material(
+          borderRadius: BorderRadius.circular(15),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(15),
+            child: isObscuringText
+                ? widget.parent.config.passwordHiddenImage ??
+                      Icon(Icons.visibility_off_outlined, color: Color(0xFFBDBDBD))
+                : widget.parent.config.passwordVisibleImage ??
+                      Icon(Icons.visibility_outlined, color: Color(0xFFBDBDBD)),
+            onTap: () => setState(() => isObscuringText = !isObscuringText),
+          ),
+        ),
       );
     }
     if (widget.parent.suffixIcon != null) return widget.parent.suffixIcon;
@@ -390,7 +453,12 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   Widget _bottomMessage() {
     return SizedBox(
       height: 16,
-      child: Text(widget.parent.bottom!, style: widget.parent.style.supportingTextStyle),
+      child: Text(
+        widget.parent.bottom!,
+        style: widget.parent.style.supportingTextStyle.copyWith(
+          color: widget.parent.style.supportingTextColor,
+        ),
+      ),
     );
   }
 

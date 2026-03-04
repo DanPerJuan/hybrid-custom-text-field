@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 
 import '../entities/validation_text_field_entity.dart';
-import 'hybryd_text_field_config.dart';
+import 'hybrid_text_field_config.dart';
 
 class HybridSearchTextFieldConfig extends HybridTextFieldConfig {
   /// {@macro HybridTextFieldConfig.textInputAction}
@@ -39,6 +39,7 @@ class HybridSearchTextFieldConfig extends HybridTextFieldConfig {
 
   /// How the filtered results are sorted after each keystroke.
   /// Defaults to [SearchSortOrder.none] — original list order.
+  /// Search
   final SearchSortOrder sortOrder;
 
   /// Extracts a numeric value from an item for numeric sort orders.
@@ -58,7 +59,7 @@ class HybridSearchTextFieldConfig extends HybridTextFieldConfig {
     this.isRequired = false,
     this.shouldDisplayErrorWhenClicked = false,
     this.validations,
-    this.sortOrder = SearchSortOrder.alphabetical,
+    this.sortOrder = SearchSortOrder.none,
     this.keyboardType = TextInputType.text,
     this.textCapitalization = TextCapitalization.none,
     this.inputFormatters,

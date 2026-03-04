@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 
-import '../../../models/configs/hybryd_text_field_config.dart';
+import '../../../models/configs/hybrid_text_field_config.dart';
 import '../../../models/entities/validation_text_field_entity.dart';
 import '../../../utils/validation_utils.dart';
 
@@ -24,6 +24,7 @@ class HybridCustomBaseTextFieldBloc extends Bloc<HybridCustomBaseTextFieldEvent,
       await switch (event) {
         HybridCustomBaseTextFieldStarted() => _onStarted(event, emit),
         HybridCustomBaseTextFieldChanged() => _onChanged(event, emit),
+        HybridCustomBaseTextFieldFormValidationsReceived() => _onFormValidationReceived(event, emit),
       };
     });
   }
@@ -56,6 +57,22 @@ class HybridCustomBaseTextFieldBloc extends Bloc<HybridCustomBaseTextFieldEvent,
           hasError: hasError,
           errorMessage: () => hasError ? error!.errorMessage : null,
         ),
+      ),
+    );
+  }
+
+  Future<void> _onFormValidationReceived(
+    HybridCustomBaseTextFieldFormValidationsReceived event,
+    Emitter<HybridCustomBaseTextFieldState> emit,
+  ) async {
+    final mergedValidations = [
+      ...state.data.validations,
+      ...event.mergedValidations,
+    ];
+
+    emit(
+      HybridCustomBaseTextFieldSuccess(
+        data: state.data.copyWith(validations: mergedValidations),
       ),
     );
   }

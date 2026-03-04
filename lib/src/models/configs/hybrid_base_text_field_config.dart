@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../entities/validation_text_field_entity.dart';
-import 'hybryd_text_field_config.dart';
+import 'hybrid_text_field_config.dart';
 
 /// Configuration for [HybridCustomBaseTextField].
 ///
@@ -95,6 +95,8 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
 
   final HybridTextFieldValidationType? validationType;
 
+  final HybridTextFieldFormatterDateType? dateFormatterType;
+
   /// Creates a [HybridBaseTextFieldConfig].
   ///
   /// All parameters are optional and fall back to sensible defaults so the
@@ -116,6 +118,7 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
     this.passwordVisibleImage,
     this.passwordHiddenImage,
     this.validationType,
+    this.dateFormatterType,
   });
 
   /// Returns a copy of this config with the given fields replaced.
@@ -138,6 +141,7 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
     Widget? passwordVisibleImage,
     Widget? passwordHiddenImage,
     HybridTextFieldValidationType? validationType,
+    HybridTextFieldFormatterDateType? dateFormatterType,
   }) {
     return HybridBaseTextFieldConfig(
       keyboardType: keyboardType ?? this.keyboardType,
@@ -156,12 +160,11 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
       passwordVisibleImage: passwordVisibleImage ?? this.passwordVisibleImage,
       passwordHiddenImage: passwordHiddenImage ?? this.passwordHiddenImage,
       validationType: validationType ?? this.validationType,
+      dateFormatterType: dateFormatterType ?? this.dateFormatterType,
     );
   }
 }
 
-enum HybridTextFieldValidationType {
-  email,
-  url,
-  dni,
-}
+enum HybridTextFieldValidationType { email, url, dni, creditCard }
+
+enum HybridTextFieldFormatterDateType { mmyy, mmyyyy, ddmmyyyy }

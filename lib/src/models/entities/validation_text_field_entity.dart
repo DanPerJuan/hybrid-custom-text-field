@@ -21,7 +21,15 @@ class ValidationTextFieldEntity {
   /// If [value] is `null` or empty, it will only pass if the regex
   /// pattern is not `r'.+'` (i.e., not a required field).
   bool validate(String? value) {
-    // Otherwise, check if the text matches the regex.
-    return regex.hasMatch(value ?? '');
+    final text = value ?? '';
+
+    if (text.isEmpty) {
+      if (regex.pattern == r'.+') {
+        return false;
+      }
+      return true;
+    }
+
+    return regex.hasMatch(text);
   }
 }

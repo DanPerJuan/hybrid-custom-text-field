@@ -7,9 +7,9 @@ import '../models/entities/validation_text_field_entity.dart';
 abstract class ValidationConstants {
   /// Validation rule to check that a field is not empty.
   static ValidationTextFieldEntity isRequired({
-    String errorMessage = 'Este campo es obligatorio',
+    String? errorMessage,
   }) => ValidationTextFieldEntity(
-    errorMessage: errorMessage,
+    errorMessage: errorMessage ?? 'Este campo es obligatorio',
     regex: RegExp(r'.+'),
   );
 
@@ -45,10 +45,10 @@ abstract class ValidationConstants {
   static ValidationTextFieldEntity phone({
     required int min,
     required int max,
-    String errorMessage = 'Número de teléfono inválido',
+    String? errorMessage,
   }) {
     return ValidationTextFieldEntity(
-      errorMessage: errorMessage,
+      errorMessage: errorMessage ?? 'Número de teléfono inválido',
       regex: RegExp('^[0-9]{$min,$max}\$'),
     );
   }
@@ -58,9 +58,9 @@ abstract class ValidationConstants {
   /// Accepts URLs with or without protocol (http/https),
   /// including domain and optional path or query parameters.
   static ValidationTextFieldEntity url({
-    String errorMessage = 'URL inválida',
+    String? errorMessage,
   }) => ValidationTextFieldEntity(
-    errorMessage: errorMessage,
+    errorMessage: errorMessage ?? 'URL inválida',
     regex: RegExp(r'^(https?:\/\/)?([\w\d-]+\.)+\w{2,}(\/[\w\d-./?%&=]*)?$'),
   );
 
@@ -71,18 +71,47 @@ abstract class ValidationConstants {
   /// - Domain name
   /// - Valid domain extension (2–4 characters)
   static ValidationTextFieldEntity email({
-    String errorMessage = 'Email inválido',
+    String? errorMessage,
   }) => ValidationTextFieldEntity(
-    errorMessage: errorMessage,
+    errorMessage: errorMessage ?? 'Email inválido',
     regex: RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$'),
   );
 
   /// Validation rule for DNI-like formats requiring at least
   /// one uppercase letter in the text.
   static ValidationTextFieldEntity dni({
-    String errorMessage = 'Debe tener 9 caracteres y al menos una letra mayúscula',
+    String? errorMessage,
   }) => ValidationTextFieldEntity(
-    errorMessage: errorMessage,
+    errorMessage: errorMessage ?? 'Debe tener 9 caracteres y al menos una letra mayúscula',
     regex: RegExp(r'^(?=.*[A-Z]).{9}$'),
+  );
+
+  /// Validation rule to check that a text is a valid credit card number.
+  static ValidationTextFieldEntity creditCard({String? errorMessage}) {
+    return ValidationTextFieldEntity(
+      errorMessage: errorMessage ?? 'Número de tarjeta inválido',
+      regex: RegExp(r'^[0-9]{13,19}$'),
+    );
+  }
+
+  static ValidationTextFieldEntity dateMMYY({
+    String? errorMessage,
+  }) => ValidationTextFieldEntity(
+    errorMessage: errorMessage ?? 'Fecha inválida',
+    regex: RegExp(r'^(0[1-9]|1[0-2])\/\d{2}$'),
+  );
+
+  static ValidationTextFieldEntity dateMMYYYY({
+    String? errorMessage,
+  }) => ValidationTextFieldEntity(
+    errorMessage: errorMessage ?? 'Fecha inválida',
+    regex: RegExp(r'^(0[1-9]|1[0-2])\/\d{4}$'),
+  );
+
+  static ValidationTextFieldEntity dateDDMMYYYY({
+    String? errorMessage,
+  }) => ValidationTextFieldEntity(
+    errorMessage: errorMessage ?? 'Fecha inválida',
+    regex: RegExp(r'^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$'),
   );
 }

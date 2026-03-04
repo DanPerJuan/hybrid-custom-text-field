@@ -42,3 +42,14 @@ class HybridCustomSearchTextFieldItemSelected extends HybridCustomSearchTextFiel
 
 /// Event triggered when the search overlay is dismissed.
 class HybridCustomSearchTextFieldDismissed extends HybridCustomSearchTextFieldEvent {}
+
+/// Fired when [HybridCustomTextFieldFormBloc] responds with the merged
+/// validation list for this field.
+///
+/// The field bloc replaces its current validation list with [mergedValidations]
+/// so form-level rules are active from the first keystroke onwards.
+final class HybridCustomBaseTextFieldFormValidationsReceived extends HybridCustomSearchTextFieldEvent {
+  final List<ValidationTextFieldEntity> mergedValidations;
+
+  HybridCustomBaseTextFieldFormValidationsReceived({required this.mergedValidations});
+}

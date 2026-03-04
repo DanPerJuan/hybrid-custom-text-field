@@ -2,8 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../hybrid_custom_text_field.dart';
-import '../../../models/configs/hybryd_text_field_config.dart';
-import '../../../models/entities/validation_text_field_entity.dart';
+import '../../../models/configs/hybrid_text_field_config.dart';
 
 part 'hybrid_custom_search_text_field_event.dart';
 part 'hybrid_custom_search_text_field_state.dart';
@@ -28,6 +27,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
         HybridCustomSearchTextFieldTapped() => _onTapped(event, emit),
         HybridCustomSearchTextFieldItemSelected() => _onItemSelected(event, emit),
         HybridCustomSearchTextFieldDismissed() => _onDismissed(event, emit),
+        HybridCustomBaseTextFieldFormValidationsReceived() => _onFormValidationReceived(event, emit),
       };
     });
   }
@@ -227,5 +227,21 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
     }
 
     return sortedList;
+  }
+
+  Future<void> _onFormValidationReceived(
+    HybridCustomBaseTextFieldFormValidationsReceived event,
+    Emitter<HybridCustomSearchTextFieldState> emit,
+  ) async {
+    final mergedValidations = [
+      ...state.data.validations,
+      ...event.mergedValidations,
+    ];
+
+    emit(
+      HybridCustomSearchTextFieldSuccess(
+        data: state.data.copyWith(validations: mergedValidations),
+      ),
+    );
   }
 }

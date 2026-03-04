@@ -31,3 +31,14 @@ class HybridCustomPhoneTextFieldCountrySearched extends HybridCustomPhoneTextFie
 
   HybridCustomPhoneTextFieldCountrySearched({required this.value});
 }
+
+/// Fired when [HybridCustomTextFieldFormBloc] responds with the merged
+/// validation list for this field.
+///
+/// The field bloc replaces its current validation list with [mergedValidations]
+/// so form-level rules are active from the first keystroke onwards.
+final class HybridCustomPhoneTextFieldFormValidationsReceived extends HybridCustomPhoneTextFieldEvent {
+  final List<ValidationTextFieldEntity> mergedValidations;
+
+  HybridCustomPhoneTextFieldFormValidationsReceived({required this.mergedValidations});
+}

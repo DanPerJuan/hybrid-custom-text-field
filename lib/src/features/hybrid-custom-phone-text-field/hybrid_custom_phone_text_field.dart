@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../hybrid_custom_text_field.dart';
+import '../hybrid-custom-text-field-form/bloc/hybrid_custom_text_field_form_bloc.dart';
+import '../hybrid_library_field_class.dart';
 import 'bloc/hybrid_custom_phone_text_field_bloc.dart';
 import 'widgets/country_picker_dialog.dart';
 import 'widgets/custom_phone_prefixes_list.dart';
@@ -30,7 +32,7 @@ import 'widgets/custom_phone_prefixes_list.dart';
 ///   onPrefixSelected: (country) => print(country.dialCode),
 /// )
 /// ```
-class HybridCustomPhoneTextField extends StatelessWidget {
+class HybridCustomPhoneTextField extends HybridLibraryField {
   /// Floating label displayed inside the [InputDecoration].
   final String? label;
 
@@ -110,21 +112,42 @@ class HybridCustomPhoneTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scope = HybridFormScope.maybeOf(context);
+
     return BlocProvider(
-      // Provide an isolated bloc instance. HybridCustomTextFieldPhoneStarted
-      // loads the country list and validation rules.
-      create: (context) =>
-          HybridCustomPhoneTextFieldBloc(config: config)
-            ..add(HybridCustomPhoneTextFieldStarted(selectedCountry: selectedCountry)),
-      child: _CustomPhoneTextFieldView(parent: this),
+      /// Provide an isolated bloc instance. HybridCustomTextFieldPhoneStarted
+      /// loads the country list and validation rules.
+      create: (_) {
+        final fieldBloc = HybridCustomPhoneTextFieldBloc(config: config)
+          ..add(HybridCustomPhoneTextFieldStarted(selectedCountry: selectedCountry));
+
+        /// If inside a form, ask the form bloc to compute the merged validation
+        /// list (field validations first, form validations appended).
+        /// The form bloc responds with HybridCustomTextFieldFormValidationsReady,
+        /// which the BlocListener below forwards to this field's bloc.
+        if (scope != null) {
+          scope.formBloc.add(
+            HybridCustomTextFieldFormFieldStarted(
+              fieldConfig: config,
+              fieldId: scope.fieldId,
+            ),
+          );
+        }
+        return fieldBloc;
+      },
+      child: _CustomPhoneTextFieldView(
+        parent: this,
+        scope: scope,
+      ),
     );
   }
 }
 
 class _CustomPhoneTextFieldView extends StatefulWidget {
   final HybridCustomPhoneTextField parent;
+  final HybridFormScope? scope;
 
-  const _CustomPhoneTextFieldView({required this.parent});
+  const _CustomPhoneTextFieldView({required this.parent, this.scope});
 
   @override
   State<_CustomPhoneTextFieldView> createState() => _CustomPhoneTextFieldViewState();
@@ -165,13 +188,31 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<HybridCustomPhoneTextFieldBloc, HybridCustomPhoneTextFieldState>(
-      listener: (context, state) {
-        _controller;
-      },
-      child: BlocBuilder<HybridCustomPhoneTextFieldBloc, HybridCustomPhoneTextFieldState>(
-        builder: (context, state) {
-          return Column(
+    return widget.scope != null
+        ? BlocListener<HybridCustomTextFieldFormBloc, HybridCustomTextFieldFormState>(
+            bloc: widget.scope!.formBloc,
+            listenWhen: (_, state) =>
+                state is HybridCustomTextFieldFormSuccess && state.data.fieldId == widget.scope!.fieldId,
+            listener: (_, state) {
+              if (state is HybridCustomTextFieldFormSuccess) {
+                _bloc.add(
+                  HybridCustomPhoneTextFieldFormValidationsReceived(
+                    mergedValidations: state.data.validations,
+                  ),
+                );
+              }
+            },
+            child: _body(),
+          )
+        : _body();
+  }
+
+  Widget _body() {
+    return BlocBuilder<HybridCustomPhoneTextFieldBloc, HybridCustomPhoneTextFieldState>(
+      builder: (context, state) {
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 2),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -187,9 +228,9 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
               if (widget.parent.bottom != null) _bottomMessage(),
               ?_errorMessage(state),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -437,7 +478,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     return TextFormField(
       focusNode: _focusNode,
       controller: _controller,
-      // Surfaces the bloc error message so Form.validate() works correctly.
       validator: (value) {
         if (state.data.hasError) {
           return state.data.errorMessage;

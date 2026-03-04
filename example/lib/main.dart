@@ -18,7 +18,7 @@ void main() async {
       focusedBorderColor: Colors.blueGrey,
       errorBorderColor: Colors.red[900],
       doubleErrorBorderColor: Colors.red,
-      borderRadius: BorderRadius.circular(30),
+      borderRadius: BorderRadius.circular(16),
       prefixesListStyle: CustomPrefixesListStyle(radioColor: Colors.grey.shade800),
     ),
     baseConfig: HybridBaseTextFieldConfig(),

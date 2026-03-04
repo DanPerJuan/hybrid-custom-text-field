@@ -11,3 +11,14 @@ class HybridCustomBaseTextFieldChanged extends HybridCustomBaseTextFieldEvent {
 
   HybridCustomBaseTextFieldChanged({required this.value});
 }
+
+/// Fired when [HybridCustomTextFieldFormBloc] responds with the merged
+/// validation list for this field.
+///
+/// The field bloc replaces its current validation list with [mergedValidations]
+/// so form-level rules are active from the first keystroke onwards.
+final class HybridCustomBaseTextFieldFormValidationsReceived extends HybridCustomBaseTextFieldEvent {
+  final List<ValidationTextFieldEntity> mergedValidations;
+
+  HybridCustomBaseTextFieldFormValidationsReceived({required this.mergedValidations});
+}

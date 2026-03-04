@@ -2,8 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../hybrid_custom_text_field.dart';
-import '../../../models/configs/hybryd_text_field_config.dart';
-import '../../../models/entities/validation_text_field_entity.dart';
+import '../../../models/configs/hybrid_text_field_config.dart';
 import '../../../utils/countries_helper.dart';
 import '../../../utils/validation_utils.dart';
 import '../../../validations/validation_constants.dart';
@@ -31,6 +30,7 @@ class HybridCustomPhoneTextFieldBloc extends Bloc<HybridCustomPhoneTextFieldEven
         HybridCustomPhoneTextFieldChanged() => _onChanged(event, emit),
         HybridCustomPhoneTextFieldCountryChanged() => _onCountryChanged(event, emit),
         HybridCustomPhoneTextFieldCountrySearched() => _onCountrySearched(event, emit),
+        HybridCustomPhoneTextFieldFormValidationsReceived() => _onFormValidationReceived(event, emit),
       };
     });
   }
@@ -43,6 +43,13 @@ class HybridCustomPhoneTextFieldBloc extends Bloc<HybridCustomPhoneTextFieldEven
     final countries = CountriesHelper.countries;
 
     if (event.selectedCountry != null) {
+      validations.add(
+        ValidationConstants.phone(
+          min: event.selectedCountry!.minLength,
+          max: event.selectedCountry!.maxLength,
+        ),
+      );
+
       emit(
         HybridCustomPhoneTextFieldSuccess(
           data: state.data.copyWith(
@@ -55,6 +62,13 @@ class HybridCustomPhoneTextFieldBloc extends Bloc<HybridCustomPhoneTextFieldEven
       );
       return;
     }
+
+    validations.add(
+      ValidationConstants.phone(
+        min: state.data.selectedCountry.minLength,
+        max: state.data.selectedCountry.maxLength,
+      ),
+    );
 
     emit(
       HybridCustomPhoneTextFieldSuccess(
@@ -125,6 +139,22 @@ class HybridCustomPhoneTextFieldBloc extends Bloc<HybridCustomPhoneTextFieldEven
           hasError: hasError,
           errorMessage: () => hasError ? error!.errorMessage : null,
         ),
+      ),
+    );
+  }
+
+  Future<void> _onFormValidationReceived(
+    HybridCustomPhoneTextFieldFormValidationsReceived event,
+    Emitter<HybridCustomPhoneTextFieldState> emit,
+  ) async {
+    final mergedValidations = [
+      ...state.data.validations,
+      ...event.mergedValidations,
+    ];
+
+    emit(
+      HybridCustomPhoneTextFieldSuccess(
+        data: state.data.copyWith(validations: mergedValidations),
       ),
     );
   }

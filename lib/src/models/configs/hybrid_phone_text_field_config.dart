@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../entities/validation_text_field_entity.dart';
-import 'hybryd_text_field_config.dart';
+import 'hybrid_text_field_config.dart';
 
 /// Configuration for [HybridCustomPhoneTextField].
 ///

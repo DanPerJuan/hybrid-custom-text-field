@@ -1,6 +1,5 @@
 import '../../hybrid_custom_text_field.dart';
-import '../models/configs/hybryd_text_field_config.dart';
-import '../models/entities/validation_text_field_entity.dart';
+import '../models/configs/hybrid_text_field_config.dart';
 import '../validations/validation_constants.dart';
 
 class ValidationUtils {
@@ -38,6 +37,27 @@ class ValidationUtils {
           if (config is HybridBaseTextFieldConfig && config.validationType == HybridTextFieldValidationType.dni) {
             validations.add(ValidationConstants.dni());
           }
+        case _ValidationFlag.creditCard:
+          if (config is HybridBaseTextFieldConfig &&
+              config.validationType == HybridTextFieldValidationType.creditCard) {
+            validations.add(ValidationConstants.creditCard());
+          }
+        case _ValidationFlag.dateMMYY:
+          if (config is HybridBaseTextFieldConfig &&
+              config.dateFormatterType == HybridTextFieldFormatterDateType.mmyy) {
+            validations.add(ValidationConstants.dateMMYY());
+          }
+
+        case _ValidationFlag.dateMMYYYY:
+          if (config is HybridBaseTextFieldConfig &&
+              config.dateFormatterType == HybridTextFieldFormatterDateType.mmyyyy) {
+            validations.add(ValidationConstants.dateMMYYYY());
+          }
+        case _ValidationFlag.dateDDMMYYY:
+          if (config is HybridBaseTextFieldConfig &&
+              config.dateFormatterType == HybridTextFieldFormatterDateType.ddmmyyyy) {
+            validations.add(ValidationConstants.dateDDMMYYYY());
+          }
       }
     }
 
@@ -51,10 +71,4 @@ class ValidationUtils {
 
 /// Internal enum that drives the switch in [ValidationUtils].
 /// Add new cases here when new built-in validations are needed.
-enum _ValidationFlag {
-  isRequired,
-  length,
-  email,
-  url,
-  dni,
-}
+enum _ValidationFlag { isRequired, length, email, url, dni, creditCard, dateMMYY, dateMMYYYY, dateDDMMYYY }
