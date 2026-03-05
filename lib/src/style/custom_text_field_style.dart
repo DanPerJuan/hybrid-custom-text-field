@@ -65,7 +65,7 @@ class HybridTextFieldStyle {
   /// Show double ring when the field has an error. Default true.
   final bool showDoubleBorderOnError;
 
-  // ── Spacing / Layout ───────────────────────────────────────────────────────
+  /// ── Spacing / Layout ───────────────────────────────────────────────────────
   final EdgeInsets contentPadding;
   final double descriptionSpacing;
   final double supportingTextSpacing;
@@ -79,13 +79,11 @@ class HybridTextFieldStyle {
   final CustomPrefixesListStyle prefixesListStyle;
   final CountryPickerDialogStyle dialogStyle;
 
-  // --- Computed getters con fallback ---
+  /// --- Computed getters con fallback ---
   Color get getBorderColor => borderColor ?? Colors.grey;
   Color get getFocusedBorderColor => focusedBorderColor ?? getBorderColor;
   Color get getDisabledBorderColor => disabledBorderColor ?? getBorderColor;
   Color get getErrorBorderColor => errorBorderColor ?? getBorderColor;
-
-  // Para el double border puedes mantener lo que ya hiciste antes
   Color get getDoubleBorderColor => doubleBorderColor ?? getBorderColor;
   Color get getDoubleFocusedBorderColor => doubleFocusedBorderColor ?? getFocusedBorderColor;
   Color get getDoubleErrorBorderColor => doubleErrorBorderColor ?? getErrorBorderColor;
@@ -148,7 +146,7 @@ class HybridTextFieldStyle {
     this.dialogStyle = const CountryPickerDialogStyle(),
   }) : doubleBorderRadius = borderRadius;
 
-  // ── Computed helpers ───────────────────────────────────────────────────────
+  /// ── Computed helpers ───────────────────────────────────────────────────────
 
   /// Returns the double ring radius, expanding each corner of [borderRadius]
   /// by [doubleBorderWidth] so the ring wraps the inner border perfectly.

@@ -41,7 +41,7 @@ class CustomPrefixesListStyle {
   final Color selectedTileColor;
 
   /// Whether to show a [Divider] between items.
-  final bool showDivider;
+  final bool shouldShowDivider;
 
   /// Color of the divider between items.
   final Color dividerColor;
@@ -66,7 +66,7 @@ class CustomPrefixesListStyle {
     this.contentPadding = const EdgeInsets.only(left: 16, right: 8),
     this.visualDensity = VisualDensity.compact,
     this.selectedTileColor = Colors.black,
-    this.showDivider = true,
+    this.shouldShowDivider = true,
     this.dividerColor = const Color.fromARGB(255, 206, 206, 206),
     this.dividerThickness = 0.5,
     this.dividerIndent = 16,
@@ -106,7 +106,7 @@ class CustomPrefixesListStyle {
       contentPadding: contentPadding ?? this.contentPadding,
       visualDensity: visualDensity ?? this.visualDensity,
       selectedTileColor: selectedTileColor ?? this.selectedTileColor,
-      showDivider: showDivider ?? this.showDivider,
+      shouldShowDivider: showDivider ?? this.shouldShowDivider,
       dividerColor: dividerColor ?? this.dividerColor,
       dividerThickness: dividerThickness ?? this.dividerThickness,
       dividerIndent: dividerIndent ?? this.dividerIndent,

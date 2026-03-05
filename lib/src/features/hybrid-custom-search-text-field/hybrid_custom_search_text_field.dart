@@ -14,7 +14,7 @@ import 'bloc/hybrid_custom_search_text_field_bloc.dart';
 /// loaded on init, and filtering is delegated to the bloc through
 /// [HybridCustomTextFieldSearchChanged] and [HybridCustomTextFieldSearchTapped].
 ///
-/// **Filtering** is done with the [displayText] callback — the bloc compares
+/// **Filtering** is done with the [displayedText] callback — the bloc compares
 /// each item's display string against the typed query using `contains`.
 ///
 /// **Sorting** is applied when the user taps the field and is configured via
@@ -65,7 +65,7 @@ class HybridCustomSearchTextField<T> extends HybridLibraryField {
 
   /// Controls whether the field accepts input. When `false`, the field uses
   /// disabled colors and ignores taps.
-  final bool enable;
+  final bool enabled;
 
   /// Custom trailing icon. Replaces the default clear (×) button.
   final Widget? suffixIcon;
@@ -85,7 +85,6 @@ class HybridCustomSearchTextField<T> extends HybridLibraryField {
   final FocusNode? focusNode;
 
   /// Fixed height of the [TextFormField] container in logical pixels.
-  /// Defaults to `62`.
   final double containerHeight;
 
   /// Full list of items to search through. Loaded into the bloc on mount via
@@ -95,13 +94,13 @@ class HybridCustomSearchTextField<T> extends HybridLibraryField {
   /// Extracts the display string from an item. Used both for filtering
   /// (the bloc compares this string against the query) and for auto-populating
   /// the controller text when the user selects an item.
-  final String Function(dynamic item) displayText;
+  final String Function(dynamic item) displayedText;
 
   /// Called with the selected item when the user taps a result row.
   final ValueChanged<T> onItemSelected;
 
   /// Optional builder for each result row. When `null`, a default [ListTile]
-  /// rendered with [displayText] is used.
+  /// rendered with [displayedText] is used.
   final Widget Function(T item)? itemBuilder;
 
   /// Maximum height of the results overlay in logical pixels. Defaults to `200`.
@@ -112,13 +111,15 @@ class HybridCustomSearchTextField<T> extends HybridLibraryField {
   /// Defaults to a white rounded card with a subtle shadow.
   final BoxDecoration? resultsDecoration;
 
-  final bool showDivider;
+  /// Whether to show a divider between each result row.
+  final bool shouldShowDivider;
 
+  /// Custom divider widget. When `null`, a default divider is used.
   final Widget? divider;
 
   /// Creates a [HybridCustomSearchTextField].
   ///
-  /// [items], [displayText] and [onItemSelected] are required.
+  /// [items], [displayedText] and [onItemSelected] are required.
   /// [controller] and [focusNode] are optional.
   HybridCustomSearchTextField({
     super.key,
@@ -130,7 +131,7 @@ class HybridCustomSearchTextField<T> extends HybridLibraryField {
     this.onChanged,
     this.onTap,
     this.onTapOutside,
-    this.enable = true,
+    this.enabled = true,
     this.suffixIcon,
     this.prefixIcon,
     HybridTextFieldStyle? style,
@@ -138,12 +139,12 @@ class HybridCustomSearchTextField<T> extends HybridLibraryField {
     this.focusNode,
     this.containerHeight = 62,
     required this.items,
-    required this.displayText,
+    required this.displayedText,
     required this.onItemSelected,
     this.itemBuilder,
     this.resultsMaxHeight = 200,
     this.resultsDecoration,
-    this.showDivider = false,
+    this.shouldShowDivider = false,
     this.divider,
   }) : style = style ?? HybridTextField.style,
        config = config ?? HybridTextField.searchConfig;
@@ -273,7 +274,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
     return BlocBuilder<HybridCustomSearchTextFieldBloc, HybridCustomSearchTextFieldState>(
       builder: (context, state) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (state.data.showResults && state.data.filteredItems.isNotEmpty && _focusNode.hasFocus) {
+          if (state.data.shouldShowResults && state.data.filteredItems.isNotEmpty && _focusNode.hasFocus) {
             if (_overlayEntry == null) {
               _showOverlay(state);
             } else {
@@ -332,11 +333,11 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   Widget _textField({required HybridCustomSearchTextFieldState state}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      decoration: _shouldShowDouble(state.data.hasError)
+      decoration: _shouldShowDoubleBorder(state.data.hasError)
           ? BoxDecoration(
               borderRadius: widget.parent.style.resolvedDoubleBorderRadius,
               border: Border.all(
-                color: _doubleColor(state.data.hasError),
+                color: _doubleBorderColor(state.data.hasError),
                 width: widget.parent.style.doubleBorderWidth,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
@@ -354,7 +355,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
               if (state.data.hasError) return state.data.errorMessage;
               return null;
             },
-            enabled: widget.parent.enable,
+            enabled: widget.parent.enabled,
             textAlign: widget.parent.style.textAlign,
             textAlignVertical: widget.parent.style.textAlignVertical,
             keyboardType: widget.parent.config.keyboardType,
@@ -363,13 +364,13 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
             inputFormatters: widget.parent.config.inputFormatters,
             cursorColor: widget.parent.style.cursorColor,
             style: widget.parent.style.textStyle.copyWith(
-              color: widget.parent.enable ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
+              color: widget.parent.enabled ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
             ),
             onChanged: (value) {
               _bloc.add(
                 HybridCustomSearchTextFieldChanged(
                   value: value.toString(),
-                  displayText: widget.parent.displayText,
+                  displayedText: widget.parent.displayedText,
                 ),
               );
               widget.parent.onChanged?.call(value, state.data.hasError);
@@ -377,7 +378,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
             onTap: () {
               _bloc.add(
                 HybridCustomSearchTextFieldTapped(
-                  displayText: widget.parent.displayText,
+                  displayedText: widget.parent.displayedText,
                 ),
               );
               widget.parent.onTap?.call();
@@ -400,9 +401,9 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   }
 
   /// Returns `true` when the outer double-border decoration should be visible.
-  bool _shouldShowDouble(bool hasError) {
+  bool _shouldShowDoubleBorder(bool hasError) {
     final s = widget.parent.style;
-    if (!widget.parent.enable) return s.doubleBorderColor != null;
+    if (!widget.parent.enabled) return s.doubleBorderColor != null;
     if (_focusNode.hasFocus) {
       return s.doubleFocusedBorderColor != null || s.doubleBorderColor != null;
     }
@@ -413,9 +414,9 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   }
 
   /// Resolves the outer double-border color.
-  Color _doubleColor(bool hasError) {
+  Color _doubleBorderColor(bool hasError) {
     final s = widget.parent.style;
-    if (!widget.parent.enable) return s.doubleBorderColor ?? s.getDisabledBorderColor;
+    if (!widget.parent.enabled) return s.doubleBorderColor ?? s.getDisabledBorderColor;
     if (_focusNode.hasFocus) {
       return s.doubleFocusedBorderColor ?? s.doubleBorderColor ?? s.getFocusedBorderColor;
     }
@@ -425,16 +426,15 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
     return s.doubleBorderColor ?? s.getBorderColor;
   }
 
-  /// Builds the full [InputDecoration].
   InputDecoration _inputDecoration(HybridCustomSearchTextFieldState state) {
     return InputDecoration(
       isDense: false,
       filled: true,
-      fillColor: widget.parent.enable ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
+      fillColor: widget.parent.enabled ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
       error: state.data.hasError ? const SizedBox.shrink() : null,
       hintTextDirection: widget.parent.style.hintTextDirection,
       hintMaxLines: widget.parent.style.hintMaxLines,
-      enabled: widget.parent.enable,
+      enabled: widget.parent.enabled,
       hintText: widget.parent.hint,
       hintStyle: widget.parent.style.hintStyle,
       prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
@@ -442,7 +442,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
       suffixIcon: _suffixIcon(),
       labelText: widget.parent.label,
       suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-      contentPadding: widget.parent.style.contentPadding, // ?? EdgeInsets.all(widget.parent.containerHeight / 4),
+      contentPadding: widget.parent.style.contentPadding,
       border: _enabledBorder(state.data.hasError),
       enabledBorder: _enabledBorder(state.data.hasError),
       focusedBorder: _focusedBorder(state.data.hasError),
@@ -497,7 +497,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
-        if (!state.data.showResults || state.data.filteredItems.isEmpty) {
+        if (!state.data.shouldShowResults || state.data.filteredItems.isEmpty) {
           return const SizedBox.shrink();
         }
         return Positioned(
@@ -509,7 +509,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
             child: Material(
               elevation: 6,
               borderRadius: BorderRadius.circular(8),
-              child: _resultsList(state),
+              child: _results(state),
             ),
           ),
         );
@@ -520,7 +520,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   }
 
   /// Builds the scrollable results list shown inside the overlay.
-  Widget _resultsList(HybridCustomSearchTextFieldState state) {
+  Widget _results(HybridCustomSearchTextFieldState state) {
     return Container(
       constraints: BoxConstraints(maxHeight: widget.parent.resultsMaxHeight),
       decoration:
@@ -549,7 +549,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
   /// default [ListTile] that renders [displayText].
   Widget _resultItem({required T item, required bool isLast}) {
     void onSelect() {
-      final text = widget.parent.displayText(item);
+      final text = widget.parent.displayedText(item);
       _controller.text = text;
       _controller.selection = TextSelection.collapsed(offset: text.length);
       _bloc.add(HybridCustomSearchTextFieldItemSelected(item: item));
@@ -561,7 +561,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
         : ListTile(
             dense: true,
             title: Text(
-              widget.parent.displayText(item),
+              widget.parent.displayedText(item),
               style: widget.parent.style.textStyle.copyWith(
                 color: widget.parent.style.textColor,
               ),
@@ -569,7 +569,7 @@ class _HybridCustomSearchTextFieldViewState<T> extends State<_HybridCustomSearch
             onTap: onSelect,
           );
 
-    if (!widget.parent.showDivider || isLast) {
+    if (!widget.parent.shouldShowDivider || isLast) {
       return content;
     }
 

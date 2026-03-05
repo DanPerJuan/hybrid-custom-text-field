@@ -12,24 +12,24 @@ class HybridCustomSearchTextFieldStarted extends HybridCustomSearchTextFieldEven
 }
 
 /// Event triggered when the user changes the text in a search-enabled field.
-/// Uses [displayText] to extract the display string for each item.
+/// Uses [displayedText] to extract the display string for each item.
 class HybridCustomSearchTextFieldChanged extends HybridCustomSearchTextFieldEvent {
   final String value;
-  String Function(dynamic item) displayText;
+  String Function(dynamic item) displayedText;
 
   HybridCustomSearchTextFieldChanged({
     required this.value,
-    required this.displayText,
+    required this.displayedText,
   });
 }
 
 /// Event triggered when the user taps the search field to show results.
-/// Can optionally sort using [sortOrder] and [sortValue], and uses [displayText] to display items.
+/// Can optionally sort using [sortOrder] and [sortValue], and uses [displayedText] to display items.
 class HybridCustomSearchTextFieldTapped extends HybridCustomSearchTextFieldEvent {
-  String Function(dynamic item) displayText;
+  String Function(dynamic item) displayedText;
 
   HybridCustomSearchTextFieldTapped({
-    required this.displayText,
+    required this.displayedText,
   });
 }
 

@@ -2,9 +2,20 @@ import 'package:flutter/services.dart';
 
 import '../../hybrid_custom_text_field.dart';
 
+/// A [TextInputFormatter] that automatically formats user input as a date string
+/// according to the specified [HybridTextFieldFormatterDateType].
+///
+/// This formatter removes any non-numeric characters from the input and inserts
+/// slashes (`/`) at the appropriate positions for the selected format.
+///
+/// Supported formats:
+/// - [HybridTextFieldFormatterDateType.mmyy] → `MM/YY`
+/// - [HybridTextFieldFormatterDateType.mmyyyy] → `MM/YYYY`
+/// - [HybridTextFieldFormatterDateType.ddmmyyyy] → `DD/MM/YYYY`
 class DateInputFormatter extends TextInputFormatter {
   final HybridTextFieldFormatterDateType type;
 
+  /// Creates a [DateInputFormatter] for the given [type].
   DateInputFormatter(this.type);
 
   @override
@@ -19,10 +30,12 @@ class DateInputFormatter extends TextInputFormatter {
         if (text.length > 4) text = text.substring(0, 4);
         if (text.length >= 3) text = '${text.substring(0, 2)}/${text.substring(2)}';
         break;
+
       case HybridTextFieldFormatterDateType.mmyyyy:
         if (text.length > 6) text = text.substring(0, 6);
         if (text.length >= 3) text = '${text.substring(0, 2)}/${text.substring(2)}';
         break;
+
       case HybridTextFieldFormatterDateType.ddmmyyyy:
         if (text.length > 8) text = text.substring(0, 8);
         if (text.length >= 5) {

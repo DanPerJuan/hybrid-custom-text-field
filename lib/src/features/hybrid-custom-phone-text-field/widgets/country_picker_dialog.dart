@@ -11,7 +11,7 @@ import '../../../style/country_picker_dialog_style.dart';
 /// - Returns the selected country via [onCountryChanged].
 class CountryPickerDialog extends StatefulWidget {
   /// Full list of available countries.
-  final List<CountryEntity> countryList;
+  final List<CountryEntity> countries;
 
   /// The currently selected country.
   final CountryEntity selectedCountry;
@@ -33,7 +33,7 @@ class CountryPickerDialog extends StatefulWidget {
   /// Creates a country picker dialog.
   const CountryPickerDialog({
     super.key,
-    required this.countryList,
+    required this.countries,
     required this.onCountryChanged,
     required this.selectedCountry,
     required this.filteredCountries,
@@ -98,12 +98,12 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
                   ),
               onChanged: (value) {
                 _filteredCountries = value.trim().isEmpty
-                    ? widget.countryList
+                    ? widget.countries
                           .where(
                             (country) => country.dialCode.contains(value.trim()),
                           )
                           .toList()
-                    : widget.countryList
+                    : widget.countries
                           .where(
                             (country) => country.name.toLowerCase().contains(value.toLowerCase().trim()),
                           )

@@ -28,12 +28,26 @@ class HybridFormConfig extends HybridTextFieldConfig {
   @override
   final List<ValidationTextFieldEntity>? validations;
 
-  final int maxLines;
-
+  /// Minimum number of visible lines when [singleLine] is `false`.
+  ///
+  /// The field will grow vertically until it reaches [maxLines].
   final int minLines;
 
+  /// Maximum number of visible lines when [singleLine] is `false`.
+  ///
+  /// Content beyond this limit becomes scrollable.
+  final int maxLines;
+
+  /// Soft keyboard type presented when the field is focused.
+  ///
+  /// Defaults to [TextInputType.text]. Use [TextInputType.emailAddress],
+  /// [TextInputType.number], etc. to optimise the keyboard layout for the
+  /// expected input.
   final TextInputType keyboardType;
 
+  /// Controls how the OS auto-capitalizes text as the user types.
+  ///
+  /// Defaults to [TextCapitalization.none].
   final TextCapitalization textCapitalization;
 
   HybridFormConfig({

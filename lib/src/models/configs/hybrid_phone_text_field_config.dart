@@ -7,15 +7,6 @@ import 'hybrid_text_field_config.dart';
 ///
 /// Extends [HybridTextFieldConfig] with phone-specific options such as how
 /// the selected country is displayed in the prefix button.
-///
-/// ### Example
-/// ```dart
-/// HybridPhoneTextFieldConfig(
-///   isRequired: true,
-///   countryViewOptions: CountryViewOptions.countryCodeWithFlag,
-///   shouldDisplayErrorWhenClicked: true,
-/// )
-/// ```
 class HybridPhoneTextFieldConfig extends HybridTextFieldConfig {
   /// {@macro HybridTextFieldConfig.textInputAction}
   @override

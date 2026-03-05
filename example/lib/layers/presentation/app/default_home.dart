@@ -81,7 +81,7 @@ class _DefaultHomeState extends State<DefaultHome> {
                 onChanged: (value, hasError) {},
                 bottom: 'Escribe solo el numero de tu DNI',
                 controller: TextEditingController(),
-                enable: true,
+                enabled: true,
                 isPassword: true,
                 prefixIcon: Padding(padding: EdgeInsetsGeometry.symmetric(horizontal: 10), child: Icon(Icons.person)),
                 config: HybridBaseTextFieldConfig(
@@ -111,7 +111,7 @@ class _DefaultHomeState extends State<DefaultHome> {
                 controller: TextEditingController(),
                 label: 'Selecciona tu pais',
                 items: countries,
-                displayText: (item) => item.name,
+                displayedText: (item) => item.name,
                 onItemSelected: (item) {
                   debugPrint('Selected: ${item.name}');
                 },
@@ -139,11 +139,11 @@ class _DefaultHomeState extends State<DefaultHome> {
                 controller: TextEditingController(),
                 label: 'Selecciona dias de vacaciones',
                 items: numbers,
-                displayText: (item) => item.toString(),
+                displayedText: (item) => item.toString(),
                 onItemSelected: (item) {
                   debugPrint('Selected: ${item}');
                 },
-                showDivider: true,
+                shouldShowDivider: true,
                 config: HybridSearchTextFieldConfig(
                   sortOrder: SearchSortOrder.numericAscending,
                   sortValue: (item) => item,

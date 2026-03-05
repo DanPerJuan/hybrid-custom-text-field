@@ -61,6 +61,12 @@ class HybridCustomBaseTextFieldBloc extends Bloc<HybridCustomBaseTextFieldEvent,
     );
   }
 
+  /// When the form sends its validations via [HybridCustomBaseTextFieldFormValidationsReceived],
+  /// this method combines them with the text field's existing validations.
+  /// Field-level validations are preserved first, ensuring they take priority over form-level rules.
+  ///
+  /// The resulting merged list of validations is then emitted in the [HybridCustomBaseTextFieldSuccess] state,
+  /// so the text field can immediately apply the new rules.
   Future<void> _onFormValidationReceived(
     HybridCustomBaseTextFieldFormValidationsReceived event,
     Emitter<HybridCustomBaseTextFieldState> emit,

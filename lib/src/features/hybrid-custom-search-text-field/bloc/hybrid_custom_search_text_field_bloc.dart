@@ -50,7 +50,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
   }
 
   /// Filters [HybridCustomSearchTextFieldData.allItems] on every keystroke using
-  /// [HybridCustomSearchTextFieldChanged.displayText] as the string extractor.
+  /// [HybridCustomSearchTextFieldChanged.displayedText] as the string extractor.
   ///
   /// When the query is empty, the full list is restored. The overlay is kept
   /// visible ([showResults] = `true`) so the user sees results immediately
@@ -68,7 +68,6 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
       error = state.data.validations.firstWhere((v) => !v.validate(event.value));
     }
 
-    // Restore the full list when the field is cleared.
     if (event.value.isEmpty) {
       emit(
         HybridCustomSearchTextFieldSuccess(
@@ -76,7 +75,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
             hasError: hasError,
             errorMessage: () => error?.errorMessage,
             filteredItems: state.data.allItems,
-            showResults: true,
+            shouldShowResults: true,
           ),
         ),
       );
@@ -85,9 +84,8 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
 
     final query = event.value.trim().toLowerCase();
 
-    // Filter by checking whether the display string contains the query.
     final filtered = state.data.filteredItems
-        .where((item) => event.displayText(item).toString().toLowerCase().contains(query))
+        .where((item) => event.displayedText(item).toString().toLowerCase().contains(query))
         .toList();
 
     emit(
@@ -96,7 +94,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
           hasError: hasError,
           errorMessage: () => error?.errorMessage,
           filteredItems: filtered,
-          showResults: true,
+          shouldShowResults: true,
         ),
       ),
     );
@@ -125,7 +123,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
           HybridCustomSearchTextFieldSuccess(
             data: state.data.copyWith(
               filteredItems: [...state.data.allItems],
-              showResults: state.data.allItems.isNotEmpty,
+              shouldShowResults: state.data.allItems.isNotEmpty,
             ),
           ),
         );
@@ -134,11 +132,11 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
 
       // Sort and persist the result as the new master order so subsequent
       // filter operations are always performed against the sorted list.
-      final filteredList = _applySort(
+      final filteredList = _sortedList(
         state.data.allItems,
         _config.sortOrder,
         _config.sortValue,
-        event.displayText,
+        event.displayedText,
       );
 
       emit(
@@ -146,7 +144,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
           data: state.data.copyWith(
             filteredItems: filteredList,
             allItems: filteredList,
-            showResults: filteredList.isNotEmpty,
+            shouldShowResults: filteredList.isNotEmpty,
           ),
         ),
       );
@@ -162,7 +160,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
     emit(
       HybridCustomSearchTextFieldSuccess(
         data: state.data.copyWith(
-          showResults: false,
+          shouldShowResults: false,
           hasError: false,
           errorMessage: () => null,
         ),
@@ -178,7 +176,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
   ) async {
     emit(
       HybridCustomSearchTextFieldSuccess(
-        data: state.data.copyWith(showResults: false),
+        data: state.data.copyWith(shouldShowResults: false),
       ),
     );
   }
@@ -193,7 +191,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
   ///
   /// [sortValue] must be non-null for numeric orders; the assert in
   /// [HybridSearchTextFieldConfig] enforces this at construction time.
-  List<dynamic> _applySort(
+  List<dynamic> _sortedList(
     List<dynamic> list,
     SearchSortOrder order,
     num Function(dynamic)? sortValue,
@@ -229,6 +227,7 @@ class HybridCustomSearchTextFieldBloc extends Bloc<HybridCustomSearchTextFieldEv
     return sortedList;
   }
 
+  /// Handles additional validation rules received from a parent form.
   Future<void> _onFormValidationReceived(
     HybridCustomBaseTextFieldFormValidationsReceived event,
     Emitter<HybridCustomSearchTextFieldState> emit,

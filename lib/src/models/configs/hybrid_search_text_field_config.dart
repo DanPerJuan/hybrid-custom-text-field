@@ -38,8 +38,13 @@ class HybridSearchTextFieldConfig extends HybridTextFieldConfig {
   final TextCapitalization textCapitalization;
 
   /// How the filtered results are sorted after each keystroke.
-  /// Defaults to [SearchSortOrder.none] — original list order.
-  /// Search
+  ///
+  /// Defaults to [SearchSortOrder.none], which preserves the original list order.
+  ///
+  /// If the selected order is [SearchSortOrder.numericAscending] or
+  /// [SearchSortOrder.numericDescending], you must also provide [sortValue]
+  /// so the field can extract a numeric value from each item to perform
+  /// the comparison correctly.
   final SearchSortOrder sortOrder;
 
   /// Extracts a numeric value from an item for numeric sort orders.

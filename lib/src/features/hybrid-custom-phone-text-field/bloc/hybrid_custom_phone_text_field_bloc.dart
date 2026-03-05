@@ -35,6 +35,14 @@ class HybridCustomPhoneTextFieldBloc extends Bloc<HybridCustomPhoneTextFieldEven
     });
   }
 
+  /// Initializes the phone field.
+  ///
+  /// - Builds the base validation rules from [_config].
+  /// - Loads the available country list.
+  /// - Adds a phone-length validation rule based on the selected country.
+  ///
+  /// If a country is explicitly provided in the event, that country
+  /// is used; otherwise, the state's default selected country is applied.
   Future<void> _onStarted(
     HybridCustomPhoneTextFieldStarted event,
     Emitter<HybridCustomPhoneTextFieldState> emit,
@@ -81,6 +89,13 @@ class HybridCustomPhoneTextFieldBloc extends Bloc<HybridCustomPhoneTextFieldEven
     );
   }
 
+  /// Updates the selected country and refreshes the phone-length validation.
+  ///
+  /// The previous phone-length rule is removed and replaced with a new one
+  /// based on the newly selected country's min/max length constraints.
+  ///
+  /// This ensures that the phone validation dynamically adapts to the
+  /// selected country.
   Future<void> _onCountryChanged(
     HybridCustomPhoneTextFieldCountryChanged event,
     Emitter<HybridCustomPhoneTextFieldState> emit,
@@ -105,6 +120,10 @@ class HybridCustomPhoneTextFieldBloc extends Bloc<HybridCustomPhoneTextFieldEven
     );
   }
 
+  /// Filters and sorts the available countries list.
+  ///
+  /// Currently sorts countries alphabetically by name and updates
+  /// [filteredCountries] in the state.
   Future<void> _onCountrySearched(
     HybridCustomPhoneTextFieldCountrySearched event,
     Emitter<HybridCustomPhoneTextFieldState> emit,
@@ -143,6 +162,13 @@ class HybridCustomPhoneTextFieldBloc extends Bloc<HybridCustomPhoneTextFieldEven
     );
   }
 
+  /// Receives additional validation rules from a parent form.
+  ///
+  /// Merges existing field-level validations with form-level validations,
+  /// preserving the original field rules first to maintain priority.
+  ///
+  /// The updated validation list is emitted so subsequent input changes
+  /// are validated against the merged rule set.
   Future<void> _onFormValidationReceived(
     HybridCustomPhoneTextFieldFormValidationsReceived event,
     Emitter<HybridCustomPhoneTextFieldState> emit,

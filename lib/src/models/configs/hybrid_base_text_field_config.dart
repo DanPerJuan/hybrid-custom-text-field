@@ -8,18 +8,6 @@ import 'hybrid_text_field_config.dart';
 ///
 /// Encapsulates all keyboard behaviour, validation rules and text-display
 /// options for a generic single- or multi-line text field.
-///
-/// ### Example
-/// ```dart
-/// HybridBaseTextFieldConfig(
-///   isRequired: true,
-///   minLength: 3,
-///   maxLength: 50,
-///   keyboardType: TextInputType.emailAddress,
-///   textInputAction: TextInputAction.next,
-///   shouldDisplayErrorWhenClicked: true,
-/// )
-/// ```
 class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
   /// {@macro HybridTextFieldConfig.textInputAction}
   @override
@@ -93,8 +81,19 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
   /// Falls back to [Icons.visibility_off_outlined] when `null`.
   final Widget? passwordHiddenImage;
 
+  /// Defines the built-in validation strategy applied to the text field.
+  ///
+  /// When provided, the corresponding validation rule is automatically
+  /// added to the field’s validation pipeline.
   final HybridTextFieldValidationType? validationType;
 
+  /// Defines the date formatting strategy applied to the text field input.
+  ///
+  /// When set, an appropriate input formatter is automatically attached
+  /// to enforce the desired date structure (e.g. adding separators such as `/`
+  /// and limiting character length).
+  ///
+  /// Add validations to the field to enforce the expected date format.
   final HybridTextFieldFormatterDateType? dateFormatterType;
 
   /// Creates a [HybridBaseTextFieldConfig].
@@ -165,6 +164,33 @@ class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
   }
 }
 
-enum HybridTextFieldValidationType { email, url, dni, creditCard }
+/// Built-in validation types supported by the base text field.
+///
+/// Each value corresponds to a predefined validation rule:
+/// - [email]: Valid email format validation.
+/// - [url]: Valid URL format validation.
+/// - [dni]: DNI-like format requiring specific constraints.
+/// - [creditCard]: Numeric credit card format validation.
+enum HybridTextFieldValidationType {
+  email,
+  url,
+  dni,
+  creditCard,
+}
 
-enum HybridTextFieldFormatterDateType { mmyy, mmyyyy, ddmmyyyy }
+/// Supported date formatting strategies for the text field.
+///
+/// Each type automatically applies an input formatter that enforces
+/// a specific date structure:
+///
+/// - [mmyy]: Formats input as `MM/YY`.
+/// - [mmyyyy]: Formats input as `MM/YYYY`.
+/// - [ddmmyyyy]: Formats input as `DD/MM/YYYY`.
+///
+/// These formatters control visual structure only. Additional
+/// validation rules may be required to ensure logical date correctness.
+enum HybridTextFieldFormatterDateType {
+  mmyy,
+  mmyyyy,
+  ddmmyyyy,
+}

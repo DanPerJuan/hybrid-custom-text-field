@@ -94,24 +94,27 @@ abstract class ValidationConstants {
     );
   }
 
+  /// Validation rule to check that a text input is a valid month/year in `MM/YY` format.
   static ValidationTextFieldEntity dateMMYY({
     String? errorMessage,
   }) => ValidationTextFieldEntity(
-    errorMessage: errorMessage ?? 'Fecha inválida',
+    errorMessage: errorMessage ?? 'Invalid date',
     regex: RegExp(r'^(0[1-9]|1[0-2])\/\d{2}$'),
   );
 
+  /// Validation rule to check that a text input is a valid month/year in `MM/YYYY` format.
   static ValidationTextFieldEntity dateMMYYYY({
     String? errorMessage,
   }) => ValidationTextFieldEntity(
-    errorMessage: errorMessage ?? 'Fecha inválida',
+    errorMessage: errorMessage ?? 'Invalid date',
     regex: RegExp(r'^(0[1-9]|1[0-2])\/\d{4}$'),
   );
 
+  /// Validation rule to check that a text input is a valid day/month/year in `DD/MM/YYYY` format.
   static ValidationTextFieldEntity dateDDMMYYYY({
     String? errorMessage,
   }) => ValidationTextFieldEntity(
-    errorMessage: errorMessage ?? 'Fecha inválida',
+    errorMessage: errorMessage ?? 'Invalid date',
     regex: RegExp(r'^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$'),
   );
 }

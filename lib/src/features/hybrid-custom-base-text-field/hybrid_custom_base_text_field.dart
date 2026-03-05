@@ -14,27 +14,6 @@ import 'bloc/hybrid_custom_base_text_field_bloc.dart';
 /// validation state. Each keystroke dispatches [HybridCustomBaseTextFieldChanged];
 /// the bloc runs all configured rules and the widget reacts to the resulting
 /// state to update border colors and show or hide the error message.
-///
-/// ### Basic usage
-/// ```dart
-/// HybridCustomBaseTextField(
-///   hint: 'Enter your email',
-///   config: HybridBaseTextFieldConfig(
-///     isRequired: true,
-///     keyboardType: TextInputType.emailAddress,
-///   ),
-///   onChanged: (value) => print(value),
-/// )
-/// ```
-///
-/// ### Password field
-/// ```dart
-/// HybridCustomBaseTextField(
-///   hint: 'Password',
-///   isPassword: true,
-///   config: HybridBaseTextFieldConfig(minLength: 8),
-/// )
-/// ```
 class HybridCustomBaseTextField extends HybridLibraryField {
   /// Placeholder text shown inside the field when it is empty.
   final String? hint;
@@ -72,7 +51,7 @@ class HybridCustomBaseTextField extends HybridLibraryField {
 
   /// Controls whether the field accepts user input. When `false`, the field
   /// uses disabled colors and ignores taps.
-  final bool enable;
+  final bool enabled;
 
   /// Custom widget placed at the trailing edge of the field.
   /// Ignored when [isPassword] is `true` — the toggle icon takes priority.
@@ -108,7 +87,7 @@ class HybridCustomBaseTextField extends HybridLibraryField {
     this.onChanged,
     this.onTap,
     this.onTapOutside,
-    this.enable = true,
+    this.enabled = true,
     this.suffixIcon,
     this.prefixIcon,
     HybridTextFieldStyle? style,
@@ -263,11 +242,11 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   Widget _textField(HybridCustomBaseTextFieldState state) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      decoration: _shouldShowDouble(state.data.hasError)
+      decoration: _shouldShowDoubleBorder(state.data.hasError)
           ? BoxDecoration(
               borderRadius: widget.parent.style.resolvedDoubleBorderRadius,
               border: Border.all(
-                color: _doubleColor(state.data.hasError),
+                color: _doubleBorderColor(state.data.hasError),
                 width: widget.parent.style.doubleBorderWidth,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
@@ -285,7 +264,7 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
             }
             return null;
           },
-          enabled: widget.parent.enable,
+          enabled: widget.parent.enabled,
           obscureText: isObscuringText,
           textAlign: widget.parent.style.textAlign,
           textAlignVertical: widget.parent.style.textAlignVertical,
@@ -303,7 +282,7 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
           minLines: widget.parent.config.singleLine ? 1 : widget.parent.config.minLines,
           cursorColor: widget.parent.style.cursorColor,
           style: widget.parent.style.textStyle.copyWith(
-            color: widget.parent.enable ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
+            color: widget.parent.enabled ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
           ),
           onChanged: (value) {
             _bloc.add(HybridCustomBaseTextFieldChanged(value: value));
@@ -329,11 +308,11 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     return InputDecoration(
       isDense: false,
       filled: true,
-      fillColor: widget.parent.enable ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
+      fillColor: widget.parent.enabled ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
       error: state.data.hasError ? const SizedBox.shrink() : null,
       hintTextDirection: widget.parent.style.hintTextDirection,
       hintMaxLines: widget.parent.style.hintMaxLines,
-      enabled: widget.parent.enable,
+      enabled: widget.parent.enabled,
       hintText: widget.parent.hint,
       hintStyle: widget.parent.style.hintStyle,
       prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
@@ -397,9 +376,9 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   /// 2. Focused  → show if [doubleFocusedBorderColor] OR [doubleBorderColor] is set.
   /// 3. Error    → show if [doubleErrorBorderColor] OR [doubleBorderColor] is set.
   /// 4. Default  → show only if [doubleBorderColor] is set.
-  bool _shouldShowDouble(bool hasError) {
+  bool _shouldShowDoubleBorder(bool hasError) {
     final s = widget.parent.style;
-    if (!widget.parent.enable) return s.doubleBorderColor != null;
+    if (!widget.parent.enabled) return s.doubleBorderColor != null;
     if (_focusNode.hasFocus) {
       return s.doubleFocusedBorderColor != null || s.doubleBorderColor != null;
     }
@@ -411,9 +390,9 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
 
   /// Resolves the outer double-border color, falling back through
   /// state-specific → base double → primary border color.
-  Color _doubleColor(bool hasError) {
+  Color _doubleBorderColor(bool hasError) {
     final s = widget.parent.style;
-    if (!widget.parent.enable) return s.doubleBorderColor ?? s.getDisabledBorderColor;
+    if (!widget.parent.enabled) return s.doubleBorderColor ?? s.getDisabledBorderColor;
     if (_focusNode.hasFocus) {
       return s.doubleFocusedBorderColor ?? s.doubleBorderColor ?? s.getFocusedBorderColor;
     }
@@ -463,7 +442,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   }
 
   /// Renders the validation error message below the field.
-
   Widget? _errorMessage(HybridCustomBaseTextFieldState state) {
     return state.data.hasError && !widget.parent.config.shouldDisplayErrorWhenClicked ||
             state.data.hasError && widget.parent.config.shouldDisplayErrorWhenClicked && _focusNode.hasFocus

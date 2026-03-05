@@ -83,7 +83,7 @@ class CustomPhonePrefixesList extends StatelessWidget {
                     return style.radioColor;
                   }),
                 ),
-                if (style.showDivider)
+                if (style.shouldShowDivider)
                   Divider(
                     indent: style.dividerIndent,
                     endIndent: style.dividerEndIndent,
