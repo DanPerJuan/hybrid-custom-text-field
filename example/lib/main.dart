@@ -8,35 +8,67 @@ import 'layers/presentation/app/container_app.dart';
 void main() async {
   await _initialize();
 
+  // ── Global config (Phase 2) ──────────────────────────────────────────────
+  // These values apply to every field unless overridden at widget level.
   HybridTextField.config(
-    style: HybridTextFieldStyle(
-      labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey),
-      borderColor: Colors.black,
-      doubleBorderWidth: 2,
-      doubleBorderRadius: 20,
-      doubleFocusedBorderColor: Colors.lightBlue,
-      focusedBorderColor: Colors.blueGrey,
-      errorBorderColor: Colors.red[900],
-      doubleErrorBorderColor: Colors.red,
-      borderRadius: BorderRadius.circular(16),
-      prefixesListStyle: CustomPrefixesListStyle(radioColor: Colors.grey.shade800),
+    // Base config: errors shown only while the field has focus
+    baseConfig: HybridBaseTextFieldConfig(
+      shouldDisplayErrorWhenClicked: false,
+      textInputAction: TextInputAction.next,
     ),
-    baseConfig: HybridBaseTextFieldConfig(),
-    phoneConfig: HybridPhoneTextFieldConfig(),
-    searchConfig: HybridSearchTextFieldConfig(),
+    // Phone config: flag + dial code prefix in all phone fields by default
+    phoneConfig: HybridPhoneTextFieldConfig(
+      shouldDisplayErrorWhenClicked: true,
+      countryViewOptions: CountryViewOptions.countryCodeWithFlag,
+    ),
+    // Search config: alphabetical sort by default
+    searchConfig: HybridSearchTextFieldConfig(
+      shouldDisplayErrorWhenClicked: true,
+      sortOrder: SearchSortOrder.alphabetical,
+    ),
+
+    // ── Global themes ────────────────────────────────────────────────────────
+    theme: HybridTextFieldTheme(
+      borderColor: const Color(0xFFD1D5DB),
+      borderRadius: BorderRadius.circular(12),
+      focusedBorderColor: const Color(0xFF2563EB),
+      focusedBorderWidth: 2,
+      errorBorderColor: const Color(0xFFEF4444),
+      doubleFocusedBorderColor: const Color(0xFF93C5FD),
+      doubleErrorBorderColor: const Color(0xFFFCA5A5),
+      doubleBorderWidth: 2,
+    ),
+    phoneTheme: HybridPhoneTextFieldTheme(
+      borderColor: const Color(0xFFD1D5DB),
+      borderRadius: BorderRadius.circular(12),
+      focusedBorderColor: const Color(0xFF2563EB),
+      focusedBorderWidth: 2,
+      errorBorderColor: const Color(0xFFEF4444),
+      doubleFocusedBorderColor: const Color(0xFF93C5FD),
+      doubleErrorBorderColor: const Color(0xFFFCA5A5),
+      doubleBorderWidth: 2,
+      containerHeight: 58,
+      prefixesListTheme: CustomPrefixesListTheme(
+        radioColor: const Color(0xFF2563EB),
+      ),
+    ),
+    searchTheme: HybridSearchTextFieldTheme(
+      borderColor: const Color(0xFFD1D5DB),
+      borderRadius: BorderRadius.circular(12),
+      focusedBorderColor: const Color(0xFF2563EB),
+      focusedBorderWidth: 2,
+      errorBorderColor: const Color(0xFFEF4444),
+      containerHeight: 58,
+      shouldShowDivider: true,
+    ),
   );
 
-  runApp(
-    ContainerApp(),
-  );
+  runApp(const ContainerApp());
 }
 
-/// Initialize application
 Future<void> _initialize() async {
-  /// Initialize Flutter bindings
   WidgetsFlutterBinding.ensureInitialized();
 
-  /// Set device orientation
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -44,9 +76,7 @@ Future<void> _initialize() async {
 
   await initializeDateFormatting();
 
-  /// Set system UI mode
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  /// Restart animations on hot reload
   Animate.restartOnHotReload = true;
 }

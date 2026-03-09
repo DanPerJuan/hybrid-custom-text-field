@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../hybrid_custom_text_field.dart';
-import '../hybrid-custom-text-field-form/bloc/hybrid_custom_text_field_form_bloc.dart';
 import '../hybrid_library_field_class.dart';
 import 'bloc/hybrid_custom_phone_text_field_bloc.dart';
 import 'widgets/country_picker_dialog.dart';
@@ -19,7 +18,19 @@ import 'widgets/custom_phone_prefixes_list.dart';
 /// - Loads the full country list and validation rules on mount.
 /// - Updates the phone length validation rule whenever the user changes the
 ///   prefix ([HybridCustomTextFieldCountryChanged]).
-/// - Runs all validation rules on every keystroke ([HybridCustomTextFieldChanged])
+/// - Runs all validation rules on every keystroke ([HybridCustomTextFieldChanged]).
+///
+/// ### Basic usage
+/// ```dart
+/// HybridCustomPhoneTextField(
+///   config: HybridPhoneTextFieldConfig(
+///     isRequired: true,
+///     countryViewOptions: CountryViewOptions.countryCodeWithFlag,
+///   ),
+///   onChanged: (value) => print(value),
+///   onPrefixSelected: (country) => print(country.dialCode),
+/// )
+/// ```
 class HybridCustomPhoneTextField extends HybridLibraryField {
   /// Floating label displayed inside the [InputDecoration].
   final String? label;
@@ -28,25 +39,17 @@ class HybridCustomPhoneTextField extends HybridLibraryField {
   final String? bottom;
 
   /// Descriptive text rendered above the field.
-  /// Color switches to [HybridTextFieldStyle.errorTextColor] on error.
+  /// Color switches to [HybridPhoneTextFieldTheme.errorTextColor] on error.
   final String? info;
 
   /// Optional external controller. An internal instance is created when `null`.
   final TextEditingController? controller;
 
-  /// Optional override of the full country list used in the prefix picker.
-  /// Defaults to [CountriesHelper.countries] when `null`.
-  final List<CountryEntity>? countries;
-
-  /// Country pre-selected when the field mounts. When `null`, the first
-  /// country in the list is used.
-  final CountryEntity? selectedCountry;
-
   /// Called when the user picks a new country prefix from the picker.
   final Function(CountryEntity country)? onPrefixSelected;
 
-  /// Called on every keystroke with the current field value.
-  final void Function(String, bool)? onChanged;
+  /// Callback triggered when the user changes the text.
+  final void Function(HybridFieldState)? onChanged;
 
   /// Called when the user taps the phone number input.
   final VoidCallback? onTap;
@@ -56,25 +59,26 @@ class HybridCustomPhoneTextField extends HybridLibraryField {
 
   /// Controls whether the field accepts input. When `false`, the field uses
   /// disabled colors and ignores taps.
-  final bool enabled;
+  final bool enable;
 
   /// Custom trailing icon for the phone number input. `null` renders no icon.
   final Widget? suffixIcon;
 
   /// Validation, keyboard behaviour and country view configuration.
-  /// Falls back to [HybridTextField.phoneConfig] when not provided.
+  /// Falls back to a default [HybridPhoneTextFieldConfig] when not provided.
   final HybridPhoneTextFieldConfig config;
 
-  /// Visual style tokens (colors, borders, typography, etc.).
-  /// Falls back to [HybridTextField.style] when not provided.
-  final HybridTextFieldStyle style;
+  /// Visual theme tokens (colors, borders, typography, etc.).
+  /// Falls back to [HybridTextField.phoneTheme] when not provided.
+  final HybridPhoneTextFieldTheme theme;
 
   /// Optional external [FocusNode] for the phone number input.
   /// An internal node is created when `null`.
   final FocusNode? focusNode;
 
-  /// Fixed height of the field container in logical pixels. Defaults to `62`.
-  final double containerHeight;
+  /// Stable identifier used by [HybridCustomTextFieldForm] to track this
+  /// field's error state. Auto-generated when `null`.
+  final String? fieldId;
 
   /// Creates a [HybridCustomPhoneTextField].
   HybridCustomPhoneTextField({
@@ -83,59 +87,41 @@ class HybridCustomPhoneTextField extends HybridLibraryField {
     this.bottom,
     this.info,
     this.controller,
-    this.countries,
-    this.selectedCountry,
     this.onPrefixSelected,
     this.onChanged,
     this.onTap,
     this.onTapOutside,
-    this.enabled = true,
+    this.enable = true,
     this.suffixIcon,
     this.focusNode,
+    this.fieldId,
     HybridPhoneTextFieldConfig? config,
-    HybridTextFieldStyle? style,
-    this.containerHeight = 62,
-  }) : style = style ?? HybridTextField.style,
-       config = config ?? HybridTextField.phoneConfig;
+    HybridPhoneTextFieldTheme? theme,
+  }) : theme = theme ?? HybridTextField.phoneTheme,
+       config = config ?? HybridPhoneTextFieldConfig();
 
   @override
   Widget build(BuildContext context) {
-    final scope = HybridFormScope.maybeOf(context);
+    final effectiveConfig = HybridTextField.phoneConfig.mergeWith(config);
 
     return BlocProvider(
-      /// Provide an isolated bloc instance. HybridCustomTextFieldPhoneStarted
-      /// loads the country list and validation rules.
-      create: (_) {
-        final fieldBloc = HybridCustomPhoneTextFieldBloc(config: config)
-          ..add(HybridCustomPhoneTextFieldStarted(selectedCountry: selectedCountry));
-
-        /// If inside a form, ask the form bloc to compute the merged validation
-        /// list (field validations first, form validations appended).
-        /// The form bloc responds with HybridCustomTextFieldFormValidationsReady,
-        /// which the BlocListener below forwards to this field's bloc.
-        if (scope != null) {
-          scope.formBloc.add(
-            HybridCustomTextFieldFormFieldStarted(
-              fieldConfig: config,
-              fieldId: scope.fieldId,
-            ),
-          );
-        }
-        return fieldBloc;
-      },
-      child: _CustomPhoneTextFieldView(
-        parent: this,
-        scope: scope,
-      ),
+      create: (_) => HybridCustomPhoneTextFieldBloc(config: effectiveConfig)
+        ..add(
+          HybridCustomPhoneTextFieldStarted(
+            selectedCountry: effectiveConfig.selectedCountry,
+            countries: effectiveConfig.countries,
+          ),
+        ),
+      child: _CustomPhoneTextFieldView(parent: this, effectiveConfig: effectiveConfig),
     );
   }
 }
 
 class _CustomPhoneTextFieldView extends StatefulWidget {
   final HybridCustomPhoneTextField parent;
-  final HybridFormScope? scope;
+  final HybridPhoneTextFieldConfig effectiveConfig;
 
-  const _CustomPhoneTextFieldView({required this.parent, this.scope});
+  const _CustomPhoneTextFieldView({required this.parent, required this.effectiveConfig});
 
   @override
   State<_CustomPhoneTextFieldView> createState() => _CustomPhoneTextFieldViewState();
@@ -145,52 +131,100 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   /// Focus node for the phone number input.
   late final FocusNode _focusNode;
 
+  /// When `true`, error messages are shown regardless of focus state.
+  bool _forceShowErrors = false;
+
+  /// `true` once the user has typed in the field at least once.
+  bool _isTouched = false;
+
   /// Stores the pointer-down position to distinguish real taps from drags.
   Offset _lastTapPosition = Offset.zero;
 
   /// Shortcut to the bloc without subscribing to rebuilds.
   HybridCustomPhoneTextFieldBloc get _bloc => context.read<HybridCustomPhoneTextFieldBloc>();
 
+  /// Resolved config (global merged with widget-level).
+  HybridPhoneTextFieldConfig get _config => widget.effectiveConfig;
+
   /// Controller — either provided by the parent or created locally.
   late TextEditingController _controller;
 
+  /// Listener stored so it can be removed in [dispose].
+  late final VoidCallback _controllerListener;
+
+  /// Last value dispatched to the bloc.
+  String _lastDispatchedValue = '';
+
+  /// Stable form field id.
+  late final String _formFieldId;
+
+  /// Cached scope reference.
+  HybridFormScope? _scope;
+
   @override
   void initState() {
+    super.initState();
+    _formFieldId = widget.parent.fieldId ?? UniqueKey().toString();
     _focusNode = widget.parent.focusNode ?? FocusNode();
     _controller = widget.parent.controller ?? TextEditingController();
+    _controllerListener = () {
+      setState(() {});
+      final text = _controller.text;
+      if (text != _lastDispatchedValue) {
+        _lastDispatchedValue = text;
+        _bloc.add(HybridCustomPhoneTextFieldChanged(value: text));
+      }
+    };
     _focusNode.addListener(_onFocusChange);
-    _controller.addListener(() => setState(() {}));
-    super.initState();
+    _controller.addListener(_controllerListener);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scope = HybridFormScope.maybeOf(context);
+    if (scope != _scope) {
+      _scope = scope;
+      _scope?.register(
+        _formFieldId,
+        onValidate: () => setState(() => _forceShowErrors = true),
+        onReset: _handleReset,
+      );
+    }
   }
 
   @override
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
-    _focusNode.dispose();
+    _controller.removeListener(_controllerListener);
+    if (widget.parent.focusNode == null) _focusNode.dispose();
+    if (widget.parent.controller == null) _controller.dispose();
     super.dispose();
   }
 
-  void _onFocusChange() => setState(() {});
+  void _onFocusChange() => setState(() {
+    if (_focusNode.hasFocus && !_isTouched) {
+      _isTouched = true;
+      _scope?.reportTouched(_formFieldId, true);
+    }
+  });
+
+  void _handleReset() {
+    _controller.clear(); // triggers _controllerListener → dispatches Changed(value: '')
+    setState(() {
+      _forceShowErrors = false;
+      _isTouched = false;
+    });
+    _scope?.reportTouched(_formFieldId, false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return widget.scope != null
-        ? BlocListener<HybridCustomTextFieldFormBloc, HybridCustomTextFieldFormState>(
-            bloc: widget.scope!.formBloc,
-            listenWhen: (_, state) =>
-                state is HybridCustomTextFieldFormSuccess && state.data.fieldId == widget.scope!.fieldId,
-            listener: (_, state) {
-              if (state is HybridCustomTextFieldFormSuccess) {
-                _bloc.add(
-                  HybridCustomPhoneTextFieldFormValidationsReceived(
-                    mergedValidations: state.data.validations,
-                  ),
-                );
-              }
-            },
-            child: _body(),
-          )
-        : _body();
+    return BlocListener<HybridCustomPhoneTextFieldBloc, HybridCustomPhoneTextFieldState>(
+      listenWhen: (prev, curr) => prev.data.hasError != curr.data.hasError,
+      listener: (_, state) => _scope?.reportError(_formFieldId, state.data.hasError),
+      child: _body(),
+    );
   }
 
   Widget _body() {
@@ -205,7 +239,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
               if (widget.parent.info != null)
                 Padding(
                   padding: EdgeInsets.only(top: 4),
-                  child: _info(hasError: state.data.hasError),
+                  child: _info(hasError: _shouldShowError(state.data.hasError)),
                 ),
               Padding(
                 padding: EdgeInsetsGeometry.only(top: 8, bottom: 5),
@@ -224,8 +258,8 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   Widget _info({required bool hasError}) {
     return Text(
       widget.parent.info!,
-      style: widget.parent.style.descriptionStyle.copyWith(
-        color: hasError ? widget.parent.style.errorTextColor : widget.parent.style.descriptionColor,
+      style: widget.parent.theme.descriptionStyle.copyWith(
+        color: hasError ? widget.parent.theme.errorTextColor : widget.parent.theme.descriptionColor,
       ),
     );
   }
@@ -235,29 +269,32 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   Widget _phoneField(HybridCustomPhoneTextFieldState state) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      decoration: _shouldShowDoubleBorder(state.data.hasError)
+      decoration: _shouldShowDouble(_shouldShowError(state.data.hasError))
           ? BoxDecoration(
-              borderRadius: widget.parent.style.resolvedDoubleBorderRadius,
+              borderRadius: widget.parent.theme.resolvedDoubleBorderRadius,
               border: Border.all(
-                color: _doubleBorderColor(state.data.hasError),
-                width: widget.parent.style.doubleBorderWidth,
+                color: _doubleColor(_shouldShowError(state.data.hasError)),
+                width: widget.parent.theme.doubleBorderWidth,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
             )
           : const BoxDecoration(),
       child: Container(
-        height: widget.parent.containerHeight + 2,
+        height: widget.parent.theme.containerHeight + 2,
         decoration: BoxDecoration(
-          color: widget.parent.style.fillColor,
-          border: Border.all(color: _borderColor(state.data.hasError), width: 1),
-          borderRadius: widget.parent.style.borderRadius,
+          color: widget.parent.theme.fillColor,
+          border: Border.all(
+            color: _borderColor(_shouldShowError(state.data.hasError)),
+            width: widget.parent.theme.borderWidth,
+          ),
+          borderRadius: widget.parent.theme.borderRadius,
         ),
         child: Row(
           children: [
             _prefix(),
             Expanded(
               child: Container(
-                height: widget.parent.containerHeight - 3,
+                height: widget.parent.theme.containerHeight - 3,
                 padding: EdgeInsets.only(right: 16),
                 alignment: Alignment.center,
                 child: _textfield(state),
@@ -269,10 +306,9 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     );
   }
 
-  /// Returns `true` when the outer double-border decoration should be visible.
-  bool _shouldShowDoubleBorder(bool hasError) {
-    final s = widget.parent.style;
-    if (!widget.parent.enabled) return s.doubleBorderColor != null;
+  bool _shouldShowDouble(bool hasError) {
+    final s = widget.parent.theme;
+    if (!widget.parent.enable) return s.doubleBorderColor != null;
     if (_focusNode.hasFocus) {
       return s.doubleFocusedBorderColor != null || s.doubleBorderColor != null;
     }
@@ -282,10 +318,9 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     return s.doubleBorderColor != null;
   }
 
-  /// Resolves the outer double-border color.
-  Color _doubleBorderColor(bool hasError) {
-    final s = widget.parent.style;
-    if (!widget.parent.enabled) return s.doubleBorderColor ?? s.getDisabledBorderColor;
+  Color _doubleColor(bool hasError) {
+    final s = widget.parent.theme;
+    if (!widget.parent.enable) return s.doubleBorderColor ?? s.getDisabledBorderColor;
     if (_focusNode.hasFocus) {
       return s.doubleFocusedBorderColor ?? s.doubleBorderColor ?? s.getFocusedBorderColor;
     }
@@ -295,20 +330,15 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     return s.doubleBorderColor ?? s.getBorderColor;
   }
 
-  /// Resolves the inner border color of the phone container based on state.
   Color _borderColor(bool hasError) {
-    final s = widget.parent.style;
-    if (!widget.parent.enabled) return s.getDisabledBorderColor;
+    final s = widget.parent.theme;
+    if (!widget.parent.enable) return s.getDisabledBorderColor;
     if (_focusNode.hasFocus) return s.getFocusedBorderColor;
     if (hasError) return s.getErrorBorderColor;
     return s.getBorderColor;
   }
 
   /// Builds the tappable country-prefix button on the left side of the field.
-  ///
-  /// Displays the selected country using [buttonResult] according to
-  /// [HybridPhoneTextFieldConfig.countryViewOptions]. Tapping opens the
-  /// country picker via [_showPrefixes].
   Widget _prefix() {
     return Material(
       color: Colors.transparent,
@@ -317,21 +347,21 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
           null,
           RoundedRectangleBorder(
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(widget.parent.style.borderRadius.topLeft.x),
-              bottomLeft: Radius.circular(widget.parent.style.borderRadius.bottomLeft.x),
+              topLeft: Radius.circular(widget.parent.theme.borderRadius.topLeft.x),
+              bottomLeft: Radius.circular(widget.parent.theme.borderRadius.bottomLeft.x),
             ),
           ),
           1,
         ),
-        onTap: () => _showPrefixes(),
+        onTap: () => _showPrefixesList(),
         child: Container(
-          height: widget.parent.containerHeight,
+          height: widget.parent.theme.containerHeight,
           padding: EdgeInsets.only(left: 16),
           decoration: BoxDecoration(
-            color: widget.parent.style.fillColor,
+            color: widget.parent.theme.fillColor,
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(widget.parent.style.borderRadius.topLeft.x),
-              bottomLeft: Radius.circular(widget.parent.style.borderRadius.bottomLeft.x),
+              topLeft: Radius.circular(widget.parent.theme.borderRadius.topLeft.x),
+              bottomLeft: Radius.circular(widget.parent.theme.borderRadius.bottomLeft.x),
             ),
           ),
           child: Row(
@@ -340,7 +370,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
               FittedBox(
                 child: Text(
                   buttonResult(
-                    countryViewOptions: widget.parent.config.countryViewOptions,
+                    countryViewOptions: _config.countryViewOptions,
                     selectedCountry: _bloc.state.data.selectedCountry,
                   ),
                 ),
@@ -348,7 +378,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
               Icon(Icons.arrow_drop_down),
               Container(
                 margin: EdgeInsets.only(right: 8),
-                height: widget.parent.containerHeight / 2,
+                height: widget.parent.theme.containerHeight / 2,
                 width: 1,
                 color: const Color(0xFFD9D9D9),
               ),
@@ -360,21 +390,21 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   }
 
   /// Opens the country picker as a modal bottom sheet or dialog depending on
-  /// [HybridCustomPhoneTextField.showDialog].
-  void _showPrefixes() async {
-    return !widget.parent.config.showDialog
+  /// [HybridPhoneTextFieldConfig.showDialog].
+  void _showPrefixesList() async {
+    return !_config.showDialog
         ? showModalBottomSheet(
             context: context,
-            builder: (context) => _modalBottomSheetBody(),
+            builder: (context) => _bodyModalBottomSheet(),
           )
         : showDialog(
             context: context,
             useRootNavigator: false,
             builder: (context) => StatefulBuilder(
               builder: (ctx, setState) => CountryPickerDialog(
-                style: widget.parent.style.dialogStyle,
+                style: widget.parent.theme.dialogTheme,
                 filteredCountries: _bloc.state.data.filteredCountries,
-                countries: _bloc.state.data.countries,
+                countryList: _bloc.state.data.countries,
                 selectedCountry: _bloc.state.data.selectedCountry,
                 dialogTitle: 'Selecciona el prefijo del pais',
                 onCountryChanged: (CountryEntity country) {
@@ -386,10 +416,10 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
   }
 
   /// Builds the body of the modal bottom sheet that contains the country list.
-  Widget _modalBottomSheetBody() {
+  Widget _bodyModalBottomSheet() {
     return Container(
       decoration: BoxDecoration(
-        color: widget.parent.style.fillColor,
+        color: widget.parent.theme.fillColor,
         borderRadius: BorderRadius.circular(30),
       ),
       child: Column(
@@ -418,7 +448,7 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
               countries: _bloc.state.data.countries,
               selectedPrefix: _bloc.state.data.selectedCountry,
               config: widget.parent.config,
-              style: widget.parent.style.prefixesListStyle,
+              style: widget.parent.theme.prefixesListTheme,
               onPrefixSelected: (country) {
                 _bloc.add(HybridCustomPhoneTextFieldCountryChanged(country: country));
                 widget.parent.onPrefixSelected;
@@ -430,16 +460,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     );
   }
 
-  /// Converts the [selectedCountry] to a display string based on
-  /// [countryViewOptions].
-  ///
-  /// | Option | Example |
-  /// |---|---|
-  /// | countryCodeOnly | `+34` |
-  /// | countryNameOnly | `Spain` |
-  /// | countryFlagOnly | `🇪🇸` |
-  /// | countryCodeWithFlag | `🇪🇸 +34` |
-  /// | countryNameWithFlag | `🇪🇸 Spain` |
   String buttonResult({
     required CountryViewOptions countryViewOptions,
     required CountryEntity selectedCountry,
@@ -458,8 +478,6 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     }
   }
 
-  /// Builds the phone number [TextFormField] without any border decoration
-  /// (borders are handled by [_phoneField]).
   Widget _textfield(HybridCustomPhoneTextFieldState state) {
     return TextFormField(
       focusNode: _focusNode,
@@ -470,18 +488,27 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
         }
         return null;
       },
-      enabled: widget.parent.enabled,
-      textAlign: widget.parent.style.textAlign,
-      textAlignVertical: widget.parent.style.textAlignVertical,
+      enabled: widget.parent.enable,
+      textAlign: widget.parent.theme.textAlign,
+      textAlignVertical: widget.parent.theme.textAlignVertical,
       keyboardType: TextInputType.phone,
-      textInputAction: widget.parent.config.textInputAction,
-      cursorColor: widget.parent.style.cursorColor,
-      style: widget.parent.style.textStyle.copyWith(
-        color: widget.parent.enabled ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
+      textInputAction: _config.textInputAction,
+      cursorColor: widget.parent.theme.cursorColor,
+      style: widget.parent.theme.textStyle.copyWith(
+        color: widget.parent.enable ? widget.parent.theme.textColor : widget.parent.theme.disabledTextColor,
       ),
       onChanged: (value) {
-        _bloc.add(HybridCustomPhoneTextFieldChanged(value: value));
-        widget.parent.onChanged?.call(value, state.data.hasError);
+        if (!_isTouched) {
+          setState(() => _isTouched = true);
+          _scope?.reportTouched(_formFieldId, true);
+        }
+        widget.parent.onChanged?.call(
+          HybridFieldState(
+            value: value,
+            hasError: state.data.hasError,
+            errorMessage: state.data.errorMessage,
+          ),
+        );
       },
       onTap: () => widget.parent.onTap?.call(),
       onTapOutside: (event) => _lastTapPosition = event.position,
@@ -495,58 +522,55 @@ class _CustomPhoneTextFieldViewState extends State<_CustomPhoneTextFieldView> {
     );
   }
 
-  /// Builds the [InputDecoration] for the phone input — borderless, since
-  /// the outer [_phoneField] container draws the border.
   InputDecoration _inputDecoration(HybridCustomPhoneTextFieldState state) {
     return InputDecoration(
       isDense: true,
       border: InputBorder.none,
       filled: true,
-      fillColor: widget.parent.enabled ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
-      error: state.data.hasError ? const SizedBox.shrink() : null,
-      hintTextDirection: widget.parent.style.hintTextDirection,
-      hintMaxLines: widget.parent.style.hintMaxLines,
-      enabled: widget.parent.enabled,
-      hintStyle: widget.parent.style.hintStyle,
+      fillColor: widget.parent.enable ? widget.parent.theme.fillColor : widget.parent.theme.disabledFillColor,
+      error: _shouldShowError(state.data.hasError) ? const SizedBox.shrink() : null,
+      hintTextDirection: widget.parent.theme.hintTextDirection,
+      hintMaxLines: widget.parent.theme.hintMaxLines,
+      enabled: widget.parent.enable,
+      hintStyle: widget.parent.theme.hintStyle,
       prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
       suffixIcon: _suffixIcon(),
       labelText: widget.parent.label,
       suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-      contentPadding: EdgeInsets.all(widget.parent.containerHeight / 4),
+      contentPadding: EdgeInsets.all(widget.parent.theme.containerHeight / 4),
       errorText: null,
       errorStyle: const TextStyle(height: 0, fontSize: 0),
     );
   }
 
-  /// Renders the validation error message below the field.
-  ///
-  /// Visibility follows [HybridPhoneTextFieldConfig.shouldDisplayErrorWhenClicked]:
-  /// - `false` → always visible when there is an active error.
-  /// - `true`  → visible only while the field has focus.
-  Widget? _errorMessage(HybridCustomPhoneTextFieldState state) {
-    return state.data.hasError && !widget.parent.config.shouldDisplayErrorWhenClicked ||
-            state.data.hasError && widget.parent.config.shouldDisplayErrorWhenClicked && _focusNode.hasFocus
-        ? SizedBox(
-            height: 16,
-            child: Text(state.data.errorMessage!, style: widget.parent.style.errorStyle),
-          )
-        : null;
+  bool _shouldShowError(bool hasError) {
+    if (!hasError) return false;
+    if (_forceShowErrors) return true;
+    if (!_isTouched) return false;
+    if (!_config.shouldDisplayErrorWhenClicked) return true;
+    return _focusNode.hasFocus;
   }
 
-  /// Trailing icon for the phone number input.
+  Widget? _errorMessage(HybridCustomPhoneTextFieldState state) {
+    if (!_shouldShowError(state.data.hasError)) return null;
+    return SizedBox(
+      height: 16,
+      child: Text(state.data.errorMessage!, style: widget.parent.theme.errorStyle),
+    );
+  }
+
   Widget? _suffixIcon() {
     if (widget.parent.suffixIcon != null) return widget.parent.suffixIcon;
     return null;
   }
 
-  /// Supporting text shown below the field when there is no error.
   Widget _bottomMessage() {
     return SizedBox(
       height: 16,
       child: Text(
         widget.parent.bottom!,
-        style: widget.parent.style.supportingTextStyle.copyWith(
-          color: widget.parent.style.supportingTextColor,
+        style: widget.parent.theme.supportingTextStyle.copyWith(
+          color: widget.parent.theme.supportingTextColor,
         ),
       ),
     );

@@ -17,7 +17,7 @@ class HybridCustomSearchTextFieldData {
   final List<dynamic> filteredItems;
 
   /// Whether the search results overlay should be shown.
-  final bool shouldShowResults;
+  final bool showResults;
 
   HybridCustomSearchTextFieldData({
     required this.hasError,
@@ -25,7 +25,7 @@ class HybridCustomSearchTextFieldData {
     required this.validations,
     required this.allItems,
     required this.filteredItems,
-    required this.shouldShowResults,
+    required this.showResults,
   });
 
   HybridCustomSearchTextFieldData copyWith({
@@ -34,7 +34,7 @@ class HybridCustomSearchTextFieldData {
     List<ValidationTextFieldEntity>? validations,
     List<dynamic>? allItems,
     List<dynamic>? filteredItems,
-    bool? shouldShowResults,
+    bool? showResults,
   }) {
     return HybridCustomSearchTextFieldData(
       hasError: hasError ?? this.hasError,
@@ -42,7 +42,7 @@ class HybridCustomSearchTextFieldData {
       validations: validations ?? this.validations,
       allItems: allItems ?? this.allItems,
       filteredItems: filteredItems ?? this.filteredItems,
-      shouldShowResults: shouldShowResults ?? this.shouldShowResults,
+      showResults: showResults ?? this.showResults,
     );
   }
 }
@@ -64,7 +64,7 @@ final class HybridCustomSearchTextFieldInitial extends HybridCustomSearchTextFie
           validations: [],
           allItems: [],
           filteredItems: [],
-          shouldShowResults: false,
+          showResults: false,
         ),
       );
 }

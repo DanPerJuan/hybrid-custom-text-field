@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../hybrid_custom_text_field.dart';
+
+import '../../hybrid_text_field.dart';
+import '../../models/configs/hybrid_base_text_field_config.dart';
+import '../../models/hybrid_field_state.dart';
 import '../../utils/date_input_formatter.dart';
 import '../../utils/floating_label_outline_input_border.dart';
-import '../hybrid-custom-text-field-form/bloc/hybrid_custom_text_field_form_bloc.dart';
+import '../hybrid-custom-text-field-form/hybrid_custom_text_field_form.dart';
 import '../hybrid_library_field_class.dart';
 import 'bloc/hybrid_custom_base_text_field_bloc.dart';
 
@@ -26,7 +29,7 @@ class HybridCustomBaseTextField extends HybridLibraryField {
   final String? bottom;
 
   /// Descriptive text rendered above the field.
-  /// Its color switches to [HybridTextFieldStyle.errorTextColor] on error.
+  /// Its color switches to [HybridTextFieldTheme.errorTextColor] on error.
   final String? info;
 
   /// Optional external controller. When `null`, an internal
@@ -40,8 +43,8 @@ class HybridCustomBaseTextField extends HybridLibraryField {
   /// and [HybridBaseTextFieldConfig.passwordHiddenImage].
   final bool isPassword;
 
-  /// Callback triggered when the text changes, returning the current value and whether the field contains a validation error.
-  final void Function(String, bool)? onChanged;
+  /// Callback triggered when the user changes the text.
+  final void Function(HybridFieldState)? onChanged;
 
   /// Called when the user taps the field.
   final VoidCallback? onTap;
@@ -61,19 +64,19 @@ class HybridCustomBaseTextField extends HybridLibraryField {
   final Widget? prefixIcon;
 
   /// Validation, keyboard and display configuration.
-  /// Falls back to [HybridTextField.baseConfig] when not provided.
+  /// Falls back to a default [HybridBaseTextFieldConfig] when not provided.
   final HybridBaseTextFieldConfig config;
 
-  /// Visual style tokens (colors, borders, typography, etc.).
-  /// Falls back to [HybridTextField.style] when not provided.
-  final HybridTextFieldStyle style;
+  /// Visual theme tokens (colors, borders, typography, etc.).
+  /// Falls back to [HybridTextField.theme] when not provided.
+  final HybridTextFieldTheme theme;
 
   /// Optional external [FocusNode]. An internal node is created when `null`.
   final FocusNode? focusNode;
 
-  /// Fixed height of the [TextFormField] container in logical pixels.
-  /// Defaults to `62`.
-  final double containerHeight;
+  /// Stable identifier used by [HybridCustomTextFieldForm] to track this
+  /// field's error state. Auto-generated when `null`.
+  final String? fieldId;
 
   /// Creates a [HybridCustomBaseTextField].
   HybridCustomBaseTextField({
@@ -90,48 +93,29 @@ class HybridCustomBaseTextField extends HybridLibraryField {
     this.enabled = true,
     this.suffixIcon,
     this.prefixIcon,
-    HybridTextFieldStyle? style,
+    HybridTextFieldTheme? theme,
     HybridBaseTextFieldConfig? config,
     this.focusNode,
-    this.containerHeight = 62,
-  }) : style = style ?? HybridTextField.style,
-       config = config ?? HybridTextField.baseConfig;
+    this.fieldId,
+  }) : theme = theme ?? HybridTextField.theme,
+       config = config ?? HybridBaseTextFieldConfig();
 
   @override
   Widget build(BuildContext context) {
-    final scope = HybridFormScope.maybeOf(context);
+    final effectiveConfig = HybridTextField.baseConfig.mergeWith(config);
 
     return BlocProvider(
-      /// Provide an isolated bloc instance and immediately fire the started
-      /// event so validations are loaded from the config.
-      create: (_) {
-        final fieldBloc = HybridCustomBaseTextFieldBloc(config: config)..add(HybridCustomBaseTextFieldStarted());
-
-        /// If inside a form, ask the form bloc to compute the merged validation
-        /// list (field validations first, form validations appended).
-        /// The form bloc responds with HybridCustomTextFieldFormValidationsReady,
-        /// which the BlocListener below forwards to this field's bloc.
-        if (scope != null) {
-          scope.formBloc.add(
-            HybridCustomTextFieldFormFieldStarted(
-              fieldConfig: config,
-              fieldId: scope.fieldId,
-            ),
-          );
-        }
-
-        return fieldBloc;
-      },
-      child: _HybridCustomBaseTextFieldView(parent: this, scope: scope),
+      create: (_) => HybridCustomBaseTextFieldBloc(config: effectiveConfig)..add(HybridCustomBaseTextFieldStarted()),
+      child: _HybridCustomBaseTextFieldView(parent: this, effectiveConfig: effectiveConfig),
     );
   }
 }
 
 class _HybridCustomBaseTextFieldView extends StatefulWidget {
   final HybridCustomBaseTextField parent;
-  final HybridFormScope? scope;
+  final HybridBaseTextFieldConfig effectiveConfig;
 
-  _HybridCustomBaseTextFieldView({required this.parent, this.scope});
+  const _HybridCustomBaseTextFieldView({required this.parent, required this.effectiveConfig});
 
   @override
   State<_HybridCustomBaseTextFieldView> createState() => _HybridCustomBaseTextFieldViewState();
@@ -141,6 +125,14 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   /// Whether the text is currently obscured. Initialized to `true` when
   /// [HybridCustomBaseTextField.isPassword] is `true`.
   bool isObscuringText = false;
+
+  /// When `true`, error messages are shown regardless of focus state.
+  /// Set by the form's [HybridFormController.validate] call.
+  bool _forceShowErrors = false;
+
+  /// `true` once the user has typed in the field at least once.
+  /// Errors are never shown before the field is touched.
+  bool _isTouched = false;
 
   /// Focus node — either provided by the parent or created locally.
   late final FocusNode _focusNode;
@@ -152,8 +144,25 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   /// Shortcut to the bloc. Reads without subscribing to rebuilds.
   HybridCustomBaseTextFieldBloc get _bloc => context.read<HybridCustomBaseTextFieldBloc>();
 
+  /// Resolved config (global merged with widget-level).
+  HybridBaseTextFieldConfig get _config => widget.effectiveConfig;
+
   /// Controller — either provided by the parent or created locally.
   late TextEditingController _controller;
+
+  /// Listener stored so it can be removed in [dispose].
+  late final VoidCallback _controllerListener;
+
+  /// Last value dispatched to the bloc. Used to avoid duplicate events
+  /// when both [onChanged] and [_controllerListener] fire for the same input,
+  /// and to detect programmatic controller updates.
+  String _lastDispatchedValue = '';
+
+  /// Stable form field id — provided by the user or auto-generated.
+  late final String _formFieldId;
+
+  /// Cached scope reference to avoid re-registering on every rebuild.
+  HybridFormScope? _scope;
 
   /// Key used to measure the rendered size of the field so the overlay can
   /// match its width.
@@ -161,42 +170,69 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
 
   @override
   void initState() {
+    super.initState();
+    _formFieldId = widget.parent.fieldId ?? UniqueKey().toString();
     _focusNode = widget.parent.focusNode ?? FocusNode();
     _controller = widget.parent.controller ?? TextEditingController();
+    _controllerListener = () {
+      setState(() {});
+      final text = _controller.text;
+      if (text != _lastDispatchedValue) {
+        _lastDispatchedValue = text;
+        _bloc.add(HybridCustomBaseTextFieldChanged(value: text));
+      }
+    };
     _focusNode.addListener(_onFocusChange);
-    _controller.addListener(() => setState(() {}));
+    _controller.addListener(_controllerListener);
     isObscuringText = widget.parent.isPassword;
-    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scope = HybridFormScope.maybeOf(context);
+    if (scope != _scope) {
+      _scope = scope;
+      _scope?.register(
+        _formFieldId,
+        onValidate: () => setState(() => _forceShowErrors = true),
+        onReset: _handleReset,
+      );
+    }
   }
 
   @override
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
-    _focusNode.dispose();
+    _controller.removeListener(_controllerListener);
+    if (widget.parent.focusNode == null) _focusNode.dispose();
+    if (widget.parent.controller == null) _controller.dispose();
     super.dispose();
   }
 
-  void _onFocusChange() => setState(() {});
+  void _onFocusChange() => setState(() {
+    if (_focusNode.hasFocus && !_isTouched) {
+      _isTouched = true;
+      _scope?.reportTouched(_formFieldId, true);
+    }
+  });
+
+  void _handleReset() {
+    _controller.clear(); // triggers _controllerListener → dispatches Changed(value: '')
+    setState(() {
+      _forceShowErrors = false;
+      _isTouched = false;
+    });
+    _scope?.reportTouched(_formFieldId, false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return widget.scope != null
-        ? BlocListener<HybridCustomTextFieldFormBloc, HybridCustomTextFieldFormState>(
-            bloc: widget.scope!.formBloc,
-            listenWhen: (_, state) =>
-                state is HybridCustomTextFieldFormSuccess && state.data.fieldId == widget.scope!.fieldId,
-            listener: (_, state) {
-              if (state is HybridCustomTextFieldFormSuccess) {
-                _bloc.add(
-                  HybridCustomBaseTextFieldFormValidationsReceived(
-                    mergedValidations: state.data.validations,
-                  ),
-                );
-              }
-            },
-            child: _body(),
-          )
-        : _body();
+    return BlocListener<HybridCustomBaseTextFieldBloc, HybridCustomBaseTextFieldState>(
+      listenWhen: (prev, curr) => prev.data.hasError != curr.data.hasError,
+      listener: (_, state) => _scope?.reportError(_formFieldId, state.data.hasError),
+      child: _body(),
+    );
   }
 
   Widget _body() {
@@ -211,7 +247,7 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
               if (widget.parent.info != null)
                 Padding(
                   padding: EdgeInsets.only(top: 4),
-                  child: _info(hasError: state.data.hasError),
+                  child: _info(hasError: _shouldShowError(state.data.hasError)),
                 ),
               Padding(
                 padding: EdgeInsetsGeometry.only(top: 8, bottom: 5),
@@ -231,8 +267,8 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   Widget _info({required bool hasError}) {
     return Text(
       widget.parent.info!,
-      style: widget.parent.style.descriptionStyle.copyWith(
-        color: hasError ? widget.parent.style.errorTextColor : widget.parent.style.descriptionColor,
+      style: widget.parent.theme.descriptionStyle.copyWith(
+        color: hasError ? widget.parent.theme.errorTextColor : widget.parent.theme.descriptionColor,
       ),
     );
   }
@@ -242,19 +278,19 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   Widget _textField(HybridCustomBaseTextFieldState state) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      decoration: _shouldShowDoubleBorder(state.data.hasError)
+      decoration: _shouldShowDouble(_shouldShowError(state.data.hasError))
           ? BoxDecoration(
-              borderRadius: widget.parent.style.resolvedDoubleBorderRadius,
+              borderRadius: widget.parent.theme.resolvedDoubleBorderRadius,
               border: Border.all(
-                color: _doubleBorderColor(state.data.hasError),
-                width: widget.parent.style.doubleBorderWidth,
+                color: _doubleColor(_shouldShowError(state.data.hasError)),
+                width: widget.parent.theme.doubleBorderWidth,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
             )
           : const BoxDecoration(),
       child: Container(
         key: _fieldKey,
-        height: widget.parent.containerHeight,
+        height: widget.parent.config.maxLines == 1 ? widget.parent.theme.containerHeight : null,
         child: TextFormField(
           focusNode: _focusNode,
           controller: _controller,
@@ -266,27 +302,41 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
           },
           enabled: widget.parent.enabled,
           obscureText: isObscuringText,
-          textAlign: widget.parent.style.textAlign,
-          textAlignVertical: widget.parent.style.textAlignVertical,
-          keyboardType: widget.parent.config.dateFormatterType != null
-              ? TextInputType.datetime
-              : widget.parent.config.keyboardType,
-          textInputAction: widget.parent.config.textInputAction,
-          textCapitalization: widget.parent.config.textCapitalization,
+          textAlign: widget.parent.theme.textAlign,
+          textAlignVertical: widget.parent.theme.textAlignVertical,
+          keyboardType: _config.dateFormatterType != null ? TextInputType.datetime : _config.keyboardType,
+          textInputAction: _config.textInputAction,
+          textCapitalization: _config.textCapitalization,
           inputFormatters: [
-            if (widget.parent.config.dateFormatterType != null)
-              DateInputFormatter(widget.parent.config.dateFormatterType!),
-            ...?widget.parent.config.inputFormatters,
+            if (_config.dateFormatterType != null) DateInputFormatter(_config.dateFormatterType!),
+            ...?_config.inputFormatters,
           ],
-          maxLines: widget.parent.config.singleLine ? 1 : widget.parent.config.maxLines,
-          minLines: widget.parent.config.singleLine ? 1 : widget.parent.config.minLines,
-          cursorColor: widget.parent.style.cursorColor,
-          style: widget.parent.style.textStyle.copyWith(
-            color: widget.parent.enabled ? widget.parent.style.textColor : widget.parent.style.disabledTextColor,
+          buildCounter:
+              (
+                BuildContext context, {
+                required int currentLength,
+                required bool isFocused,
+                required int? maxLength,
+              }) => null,
+          maxLength: widget.parent.config.maxLength,
+          maxLines: _config.singleLine ? 1 : _config.maxLines,
+          minLines: _config.singleLine ? 1 : _config.minLines,
+          cursorColor: widget.parent.theme.cursorColor,
+          style: widget.parent.theme.textStyle.copyWith(
+            color: widget.parent.enabled ? widget.parent.theme.textColor : widget.parent.theme.disabledTextColor,
           ),
           onChanged: (value) {
-            _bloc.add(HybridCustomBaseTextFieldChanged(value: value));
-            widget.parent.onChanged?.call(value, state.data.hasError);
+            if (!_isTouched) {
+              setState(() => _isTouched = true);
+              _scope?.reportTouched(_formFieldId, true);
+            }
+            widget.parent.onChanged?.call(
+              HybridFieldState(
+                value: value,
+                hasError: state.data.hasError,
+                errorMessage: state.data.errorMessage,
+              ),
+            );
           },
           onTap: () => widget.parent.onTap?.call(),
           onTapOutside: (event) => _lastTapPosition = event.position,
@@ -308,13 +358,13 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     return InputDecoration(
       isDense: false,
       filled: true,
-      fillColor: widget.parent.enabled ? widget.parent.style.fillColor : widget.parent.style.disabledFillColor,
-      error: state.data.hasError ? const SizedBox.shrink() : null,
-      hintTextDirection: widget.parent.style.hintTextDirection,
-      hintMaxLines: widget.parent.style.hintMaxLines,
+      fillColor: widget.parent.enabled ? widget.parent.theme.fillColor : widget.parent.theme.disabledFillColor,
+      error: _shouldShowError(state.data.hasError) ? const SizedBox.shrink() : null,
+      hintTextDirection: widget.parent.theme.hintTextDirection,
+      hintMaxLines: widget.parent.theme.hintMaxLines,
       enabled: widget.parent.enabled,
       hintText: widget.parent.hint,
-      hintStyle: widget.parent.style.hintStyle,
+      hintStyle: widget.parent.theme.hintStyle,
       prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
       prefixIcon: widget.parent.prefixIcon,
       suffixIcon: _suffixIcon(),
@@ -322,13 +372,15 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
       suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       contentPadding: widget.parent.label == null
           ? EdgeInsets.symmetric(
-              horizontal: widget.parent.containerHeight / 4,
-              vertical: widget.parent.containerHeight / 3.2,
+              horizontal: widget.parent.theme.containerHeight / 4,
+              vertical: widget.parent.theme.containerHeight / 3.2,
             )
-          : widget.parent.style.contentPadding,
-      border: _enabledBorder(state.data.hasError),
-      enabledBorder: _enabledBorder(state.data.hasError),
-      focusedBorder: _focusedBorder(state.data.hasError),
+          : widget.parent.config.maxLines > 1
+          ? EdgeInsets.symmetric(horizontal: 10, vertical: 8)
+          : widget.parent.theme.contentPadding,
+      border: _enabledBorder(_shouldShowError(state.data.hasError)),
+      enabledBorder: _enabledBorder(_shouldShowError(state.data.hasError)),
+      focusedBorder: _focusedBorder(_shouldShowError(state.data.hasError)),
       disabledBorder: _disabledBorder(),
       errorBorder: _errorBorder(),
       focusedErrorBorder: _errorBorder(),
@@ -340,44 +392,31 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
   /// Creates a [FloatingLabelOutlineInputBorder] with [color] and [width].
   FloatingLabelOutlineInputBorder _border(Color color, double width) {
     return FloatingLabelOutlineInputBorder(
-      borderRadius: widget.parent.style.borderRadius,
+      borderRadius: widget.parent.theme.borderRadius,
       borderSide: BorderSide(color: color, width: width),
     );
   }
 
-  /// Border shown when the field is enabled but not focused.
-  /// Switches to [errorBorderColor] when [hasError] is `true`.
   FloatingLabelOutlineInputBorder _enabledBorder(bool hasError) => _border(
-    hasError ? widget.parent.style.getErrorBorderColor : widget.parent.style.getBorderColor,
-    widget.parent.style.borderWidth,
+    hasError ? widget.parent.theme.getErrorBorderColor : widget.parent.theme.getBorderColor,
+    widget.parent.theme.borderWidth,
   );
 
-  /// Border shown while the field is focused.
   FloatingLabelOutlineInputBorder _focusedBorder(bool hasError) => _border(
-    widget.parent.style.getFocusedBorderColor,
-    widget.parent.style.focusedBorderWidth,
+    widget.parent.theme.getFocusedBorderColor,
+    widget.parent.theme.focusedBorderWidth,
   );
 
-  /// Border shown when the field is disabled (not interactive).
   FloatingLabelOutlineInputBorder _disabledBorder() =>
-      _border(widget.parent.style.getDisabledBorderColor, widget.parent.style.borderWidth);
+      _border(widget.parent.theme.getDisabledBorderColor, widget.parent.theme.borderWidth);
 
-  /// Border used when [TextFormField] enters error state.
-  /// Uses [focusedBorderColor] while focused, otherwise [errorBorderColor].
   FloatingLabelOutlineInputBorder _errorBorder() => _border(
-    _focusNode.hasFocus ? widget.parent.style.getFocusedBorderColor : widget.parent.style.getErrorBorderColor,
-    widget.parent.style.borderWidth,
+    _focusNode.hasFocus ? widget.parent.theme.getFocusedBorderColor : widget.parent.theme.getErrorBorderColor,
+    widget.parent.theme.borderWidth,
   );
 
-  /// Returns `true` when the outer double-border decoration should be visible.
-  ///
-  /// Priority:
-  /// 1. Disabled → show only if [doubleBorderColor] is set.
-  /// 2. Focused  → show if [doubleFocusedBorderColor] OR [doubleBorderColor] is set.
-  /// 3. Error    → show if [doubleErrorBorderColor] OR [doubleBorderColor] is set.
-  /// 4. Default  → show only if [doubleBorderColor] is set.
-  bool _shouldShowDoubleBorder(bool hasError) {
-    final s = widget.parent.style;
+  bool _shouldShowDouble(bool hasError) {
+    final s = widget.parent.theme;
     if (!widget.parent.enabled) return s.doubleBorderColor != null;
     if (_focusNode.hasFocus) {
       return s.doubleFocusedBorderColor != null || s.doubleBorderColor != null;
@@ -388,10 +427,8 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     return s.doubleBorderColor != null;
   }
 
-  /// Resolves the outer double-border color, falling back through
-  /// state-specific → base double → primary border color.
-  Color _doubleBorderColor(bool hasError) {
-    final s = widget.parent.style;
+  Color _doubleColor(bool hasError) {
+    final s = widget.parent.theme;
     if (!widget.parent.enabled) return s.doubleBorderColor ?? s.getDisabledBorderColor;
     if (_focusNode.hasFocus) {
       return s.doubleFocusedBorderColor ?? s.doubleBorderColor ?? s.getFocusedBorderColor;
@@ -402,10 +439,6 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     return s.doubleBorderColor ?? s.getBorderColor;
   }
 
-  /// Builds the suffix icon:
-  /// - **Password field** → tap-to-toggle visibility using custom icons from
-  ///   the config or default Material eye icons.
-  /// - **Otherwise** → [HybridCustomBaseTextField.suffixIcon] or `null`.
   Widget? _suffixIcon() {
     if (widget.parent.isPassword) {
       return Padding(
@@ -415,10 +448,8 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
           child: InkWell(
             borderRadius: BorderRadius.circular(15),
             child: isObscuringText
-                ? widget.parent.config.passwordHiddenImage ??
-                      Icon(Icons.visibility_off_outlined, color: Color(0xFFBDBDBD))
-                : widget.parent.config.passwordVisibleImage ??
-                      Icon(Icons.visibility_outlined, color: Color(0xFFBDBDBD)),
+                ? _config.passwordHiddenImage ?? Icon(Icons.visibility_off_outlined, color: Color(0xFFBDBDBD))
+                : _config.passwordVisibleImage ?? Icon(Icons.visibility_outlined, color: Color(0xFFBDBDBD)),
             onTap: () => setState(() => isObscuringText = !isObscuringText),
           ),
         ),
@@ -428,27 +459,31 @@ class _HybridCustomBaseTextFieldViewState extends State<_HybridCustomBaseTextFie
     return null;
   }
 
-  /// Supporting text shown below the field when there is no validation error.
   Widget _bottomMessage() {
     return SizedBox(
       height: 16,
       child: Text(
         widget.parent.bottom!,
-        style: widget.parent.style.supportingTextStyle.copyWith(
-          color: widget.parent.style.supportingTextColor,
+        style: widget.parent.theme.supportingTextStyle.copyWith(
+          color: widget.parent.theme.supportingTextColor,
         ),
       ),
     );
   }
 
-  /// Renders the validation error message below the field.
+  bool _shouldShowError(bool hasError) {
+    if (!hasError) return false;
+    if (_forceShowErrors) return true;
+    if (!_isTouched) return false;
+    if (!_config.shouldDisplayErrorWhenClicked) return true;
+    return _focusNode.hasFocus;
+  }
+
   Widget? _errorMessage(HybridCustomBaseTextFieldState state) {
-    return state.data.hasError && !widget.parent.config.shouldDisplayErrorWhenClicked ||
-            state.data.hasError && widget.parent.config.shouldDisplayErrorWhenClicked && _focusNode.hasFocus
-        ? SizedBox(
-            height: 16,
-            child: Text(state.data.errorMessage!, style: widget.parent.style.errorStyle),
-          )
-        : null;
+    if (!_shouldShowError(state.data.hasError)) return SizedBox();
+    return SizedBox(
+      height: 16,
+      child: Text(state.data.errorMessage!, style: widget.parent.theme.errorStyle),
+    );
   }
 }

@@ -4,12 +4,11 @@ import 'package:flutter/material.dart';
 ///
 /// All properties are optional — when `null`, the widget uses the values
 /// hardcoded as defaults in the original implementation.
-class CustomPrefixesListStyle {
+class CustomPrefixesListTheme {
   /// Background color of the list container.
   final Color backgroundColor;
 
   /// Style applied specifically to the country name.
-  /// Only used when [countryViewOptions] includes the name part.
   final TextStyle nameStyle;
 
   /// Fill color of the radio button (both selected and unselected states).
@@ -25,7 +24,7 @@ class CustomPrefixesListStyle {
   /// Border width of the radio button.
   final double radioBorderWidth;
 
-  /// Scale factor applied to the radio button
+  /// Scale factor applied to the radio button.
   final double radioScaleFactor;
 
   /// Whether the radio button appears on the leading or trailing side.
@@ -46,16 +45,16 @@ class CustomPrefixesListStyle {
   /// Color of the divider between items.
   final Color dividerColor;
 
-  /// Thickness of the divider in logical pixels
+  /// Thickness of the divider in logical pixels.
   final double dividerThickness;
 
-  /// Left indent of the divider
+  /// Left indent of the divider.
   final double dividerIndent;
 
-  /// Right indent of the divider
+  /// Right indent of the divider.
   final double dividerEndIndent;
 
-  const CustomPrefixesListStyle({
+  const CustomPrefixesListTheme({
     this.backgroundColor = Colors.white,
     this.nameStyle = const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
     this.radioColor = Colors.black,
@@ -73,13 +72,9 @@ class CustomPrefixesListStyle {
     this.dividerEndIndent = 16,
   }) : radioSelectedColor = radioColor;
 
-  CustomPrefixesListStyle copyWith({
+  CustomPrefixesListTheme copyWith({
     Color? backgroundColor,
-    TextStyle? itemTextStyle,
-    TextStyle? flagStyle,
     TextStyle? nameStyle,
-    TextStyle? dialCodeStyle,
-    double? itemSpacing,
     Color? radioColor,
     Color? radioSelectedColor,
     Color? radioBorderColor,
@@ -89,13 +84,13 @@ class CustomPrefixesListStyle {
     EdgeInsetsGeometry? contentPadding,
     VisualDensity? visualDensity,
     Color? selectedTileColor,
-    bool? showDivider,
+    bool? shouldShowDivider,
     Color? dividerColor,
     double? dividerThickness,
     double? dividerIndent,
     double? dividerEndIndent,
   }) {
-    return CustomPrefixesListStyle(
+    return CustomPrefixesListTheme(
       backgroundColor: backgroundColor ?? this.backgroundColor,
       nameStyle: nameStyle ?? this.nameStyle,
       radioColor: radioColor ?? this.radioColor,
@@ -106,7 +101,7 @@ class CustomPrefixesListStyle {
       contentPadding: contentPadding ?? this.contentPadding,
       visualDensity: visualDensity ?? this.visualDensity,
       selectedTileColor: selectedTileColor ?? this.selectedTileColor,
-      shouldShowDivider: showDivider ?? this.shouldShowDivider,
+      shouldShowDivider: shouldShowDivider ?? this.shouldShowDivider,
       dividerColor: dividerColor ?? this.dividerColor,
       dividerThickness: dividerThickness ?? this.dividerThickness,
       dividerIndent: dividerIndent ?? this.dividerIndent,

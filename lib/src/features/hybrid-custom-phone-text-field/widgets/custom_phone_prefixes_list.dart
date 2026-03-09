@@ -7,7 +7,7 @@ import '../../../../hybrid_custom_text_field.dart';
 /// This widget is typically used inside a modal or bottom sheet
 /// to allow the user to select a country phone prefix.
 ///
-/// What each row displays is controlled by [CustomPrefixesListStyle.countryViewOptions],
+/// What each row displays is controlled by [CustomPrefixesListTheme.countryViewOptions],
 /// which uses the same [CountryViewOptions] enum that drives the prefix button
 /// in [HybridCustomPhoneTextField]. This keeps the picker consistent with
 /// however the field is configured.
@@ -23,9 +23,8 @@ class CustomPhonePrefixesList extends StatelessWidget {
   /// Callback triggered when a prefix is selected.
   final Function(CountryEntity)? onPrefixSelected;
 
-  /// Visual style overrides. All fields are optional — when `null`, the
-  /// original defaults are preserved.
-  final CustomPrefixesListStyle style;
+  /// Visual theme overrides.
+  final CustomPrefixesListTheme style;
 
   final HybridPhoneTextFieldConfig config;
 
@@ -99,14 +98,6 @@ class CustomPhonePrefixesList extends StatelessWidget {
     );
   }
 
-  /// Builds the tile title driven by [CustomPrefixesListStyle.countryViewOptions].
-  ///
-  /// Each [CountryViewOptions] value maps to a different layout:
-  /// - `countryCodeOnly`    → `+34`
-  /// - `countryNameOnly`    → `Spain`
-  /// - `countryFlagOnly`    → `🇪🇸`
-  /// - `countryCodeWithFlag`→ `🇪🇸  +34`
-  /// - `countryNameWithFlag`→ `🇪🇸  Spain`
   String buttonResult({
     required CountryViewOptions countryViewOptions,
     required CountryEntity selectedCountry,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/entities/country_entity.dart';
-import '../../../style/country_picker_dialog_style.dart';
+import '../../../theme/country_picker_dialog_theme.dart';
 
 /// A dialog that allows users to pick a country from a list.
 ///
@@ -11,7 +11,7 @@ import '../../../style/country_picker_dialog_style.dart';
 /// - Returns the selected country via [onCountryChanged].
 class CountryPickerDialog extends StatefulWidget {
   /// Full list of available countries.
-  final List<CountryEntity> countries;
+  final List<CountryEntity> countryList;
 
   /// The currently selected country.
   final CountryEntity selectedCountry;
@@ -28,12 +28,12 @@ class CountryPickerDialog extends StatefulWidget {
   /// Title displayed at the top of the dialog.
   final String dialogTitle;
 
-  final CountryPickerDialogStyle style;
+  final CountryPickerDialogTheme style;
 
   /// Creates a country picker dialog.
   const CountryPickerDialog({
     super.key,
-    required this.countries,
+    required this.countryList,
     required this.onCountryChanged,
     required this.selectedCountry,
     required this.filteredCountries,
@@ -90,7 +90,7 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
                   InputDecoration(
                     border: widget.style.searchStyle.border,
                     suffixIcon: widget.style.searchStyle.suffixIcon,
-                    hintText: 'Busca un país',
+                    hintText: 'Busca un país',
                     hintStyle: widget.style.searchStyle.hintStyle,
                     fillColor: widget.style.searchStyle.fillColor,
                     focusedBorder: widget.style.searchStyle.focusedBorder,
@@ -98,12 +98,12 @@ class _CountryPickerDialogState extends State<CountryPickerDialog> {
                   ),
               onChanged: (value) {
                 _filteredCountries = value.trim().isEmpty
-                    ? widget.countries
+                    ? widget.countryList
                           .where(
                             (country) => country.dialCode.contains(value.trim()),
                           )
                           .toList()
-                    : widget.countries
+                    : widget.countryList
                           .where(
                             (country) => country.name.toLowerCase().contains(value.toLowerCase().trim()),
                           )

@@ -6,191 +6,143 @@ import 'hybrid_text_field_config.dart';
 
 /// Configuration for [HybridCustomBaseTextField].
 ///
-/// Encapsulates all keyboard behaviour, validation rules and text-display
-/// options for a generic single- or multi-line text field.
+/// ### Global params (inheritable via [HybridTextField.baseConfig])
+/// - [textInputAction] — keyboard action button
+/// - [shouldDisplayErrorWhenClicked] — show errors only while focused
+/// - [textCapitalization] — OS auto-capitalisation
+/// - [keyboardType] — soft keyboard layout
+///
+/// ### Per-field params (always widget-level)
+/// - [validations], [dateFormatterType], [singleLine], [minLines], [maxLines],
+///   [inputFormatters], [passwordVisibleImage], [passwordHiddenImage]
+///
+/// ### Validation
+///
+/// All validation rules are provided via [validations]. Use [ValidationConstants]
+/// to build common rules:
+/// ```dart
+/// config: HybridBaseTextFieldConfig(
+///   validations: [
+///     ValidationConstants.isRequired(),
+///     ValidationConstants.email(),
+///   ],
+/// )
+/// ```
 class HybridBaseTextFieldConfig extends HybridTextFieldConfig {
-  /// {@macro HybridTextFieldConfig.textInputAction}
-  @override
-  final TextInputAction textInputAction;
+  // ── Global params (explicit* pattern) ──────────────────────────────────────
 
-  /// {@macro HybridTextFieldConfig.maxLength}
-  @override
-  final int? maxLength;
+  final TextInputAction? explicitTextInputAction;
+  final bool? explicitShouldDisplayErrorWhenClicked;
+  final TextCapitalization? explicitTextCapitalization;
+  final TextInputType? explicitKeyboardType;
 
-  /// {@macro HybridTextFieldConfig.minLength}
   @override
-  final int? minLength;
+  TextInputAction get textInputAction => explicitTextInputAction ?? TextInputAction.done;
 
-  /// {@macro HybridTextFieldConfig.isRequired}
   @override
-  final bool isRequired;
+  bool get shouldDisplayErrorWhenClicked => explicitShouldDisplayErrorWhenClicked ?? false;
 
-  /// {@macro HybridTextFieldConfig.shouldDisplayErrorWhenClicked}
-  @override
-  final bool shouldDisplayErrorWhenClicked;
+  TextCapitalization get textCapitalization => explicitTextCapitalization ?? TextCapitalization.none;
 
-  /// {@macro HybridTextFieldConfig.validations}
+  TextInputType get keyboardType => explicitKeyboardType ?? TextInputType.text;
+
+  // ── Per-field params ────────────────────────────────────────────────────────
+
   @override
   final List<ValidationTextFieldEntity>? validations;
 
   /// When `true`, the field collapses to a single line and [minLines] /
   /// [maxLines] are ignored. Defaults to `true`.
+  ///
+  /// This is always a per-field decision — it is not inheritable from global
+  /// config.
   final bool singleLine;
 
-  /// Minimum number of visible lines when [singleLine] is `false`.
-  ///
-  /// The field will grow vertically until it reaches [maxLines].
   final int minLines;
-
-  /// Maximum number of visible lines when [singleLine] is `false`.
-  ///
-  /// Content beyond this limit becomes scrollable.
   final int maxLines;
 
-  /// Optional list of [TextInputFormatter]s applied to every character the
-  /// user types. Useful for restricting input to digits, currency formats, etc.
+  final int? maxLength;
+
   final List<TextInputFormatter>? inputFormatters;
-
-  /// When `true`, the field renders each character as a bullet (•) and a
-  /// visibility-toggle icon is shown in the suffix slot.
-  ///
-  /// Use this for password fields.
-  final bool obscureText;
-
-  /// Soft keyboard type presented when the field is focused.
-  ///
-  /// Defaults to [TextInputType.text]. Use [TextInputType.emailAddress],
-  /// [TextInputType.number], etc. to optimise the keyboard layout for the
-  /// expected input.
-  final TextInputType keyboardType;
-
-  /// Controls how the OS auto-capitalizes text as the user types.
-  ///
-  /// Defaults to [TextCapitalization.none].
-  final TextCapitalization textCapitalization;
-
-  /// Optional custom widget shown when [isPassword] is `true` and the text
-  /// is currently **visible**.
-  ///
-  /// Falls back to [Icons.visibility_outlined] when `null`.
   final Widget? passwordVisibleImage;
-
-  /// Optional custom widget shown when [isPassword] is `true` and the text
-  /// is currently **hidden**.
-  ///
-  /// Falls back to [Icons.visibility_off_outlined] when `null`.
   final Widget? passwordHiddenImage;
 
-  /// Defines the built-in validation strategy applied to the text field.
-  ///
-  /// When provided, the corresponding validation rule is automatically
-  /// added to the field’s validation pipeline.
-  final HybridTextFieldValidationType? validationType;
-
-  /// Defines the date formatting strategy applied to the text field input.
-  ///
-  /// When set, an appropriate input formatter is automatically attached
-  /// to enforce the desired date structure (e.g. adding separators such as `/`
-  /// and limiting character length).
-  ///
-  /// Add validations to the field to enforce the expected date format.
+  /// When set, automatically applies the matching input formatter and adds the
+  /// corresponding date validation rule.
   final HybridTextFieldFormatterDateType? dateFormatterType;
 
-  /// Creates a [HybridBaseTextFieldConfig].
-  ///
-  /// All parameters are optional and fall back to sensible defaults so the
-  /// config can be used with zero configuration for simple cases.
   HybridBaseTextFieldConfig({
-    this.keyboardType = TextInputType.text,
-    this.textCapitalization = TextCapitalization.none,
-    this.textInputAction = TextInputAction.done,
-    this.maxLength,
+    TextInputAction? textInputAction,
+    TextCapitalization? textCapitalization,
+    TextInputType? keyboardType,
+    bool? shouldDisplayErrorWhenClicked,
     this.singleLine = true,
     this.minLines = 1,
     this.maxLines = 1,
     this.inputFormatters,
-    this.obscureText = false,
-    this.isRequired = false,
-    this.minLength,
     this.validations,
-    this.shouldDisplayErrorWhenClicked = false,
     this.passwordVisibleImage,
     this.passwordHiddenImage,
-    this.validationType,
     this.dateFormatterType,
-  });
+    this.maxLength,
+  }) : explicitTextInputAction = textInputAction,
+       explicitTextCapitalization = textCapitalization,
+       explicitKeyboardType = keyboardType,
+       explicitShouldDisplayErrorWhenClicked = shouldDisplayErrorWhenClicked;
 
-  /// Returns a copy of this config with the given fields replaced.
+  /// Merges [this] (global config) with [other] (widget-level config).
   ///
-  /// Fields not passed to [copyWith] keep their current values.
+  /// Global params: [other]'s explicit value wins when set, otherwise [this]
+  /// keeps its value. Per-field params always come from [other].
+  HybridBaseTextFieldConfig mergeWith(HybridBaseTextFieldConfig? other) {
+    if (other == null) return this;
+    return HybridBaseTextFieldConfig(
+      textInputAction: other.explicitTextInputAction ?? explicitTextInputAction,
+      shouldDisplayErrorWhenClicked:
+          other.explicitShouldDisplayErrorWhenClicked ?? explicitShouldDisplayErrorWhenClicked,
+      textCapitalization: other.explicitTextCapitalization ?? explicitTextCapitalization,
+      keyboardType: other.explicitKeyboardType ?? explicitKeyboardType,
+      // per-field: widget always wins
+      singleLine: other.singleLine,
+      validations: other.validations,
+      dateFormatterType: other.dateFormatterType,
+      minLines: other.minLines,
+      maxLines: other.maxLines,
+      inputFormatters: other.inputFormatters,
+      passwordVisibleImage: other.passwordVisibleImage,
+      passwordHiddenImage: other.passwordHiddenImage,
+    );
+  }
+
   HybridBaseTextFieldConfig copyWith({
-    TextInputType? keyboardType,
-    TextCapitalization? textCapitalization,
     TextInputAction? textInputAction,
-    int? maxLength,
+    TextCapitalization? textCapitalization,
+    TextInputType? keyboardType,
     bool? singleLine,
     int? minLines,
     int? maxLines,
     List<TextInputFormatter>? inputFormatters,
-    bool? obscureText,
-    bool? isRequired,
-    int? minLength,
     List<ValidationTextFieldEntity>? validations,
     bool? shouldDisplayErrorWhenClicked,
     Widget? passwordVisibleImage,
     Widget? passwordHiddenImage,
-    HybridTextFieldValidationType? validationType,
     HybridTextFieldFormatterDateType? dateFormatterType,
   }) {
     return HybridBaseTextFieldConfig(
-      keyboardType: keyboardType ?? this.keyboardType,
-      textCapitalization: textCapitalization ?? this.textCapitalization,
-      textInputAction: textInputAction ?? this.textInputAction,
-      maxLength: maxLength ?? this.maxLength,
+      textInputAction: textInputAction ?? explicitTextInputAction,
+      textCapitalization: textCapitalization ?? explicitTextCapitalization,
+      keyboardType: keyboardType ?? explicitKeyboardType,
+      shouldDisplayErrorWhenClicked: shouldDisplayErrorWhenClicked ?? explicitShouldDisplayErrorWhenClicked,
       singleLine: singleLine ?? this.singleLine,
       minLines: minLines ?? this.minLines,
       maxLines: maxLines ?? this.maxLines,
       inputFormatters: inputFormatters ?? this.inputFormatters,
-      obscureText: obscureText ?? this.obscureText,
-      isRequired: isRequired ?? this.isRequired,
-      minLength: minLength ?? this.minLength,
       validations: validations ?? this.validations,
-      shouldDisplayErrorWhenClicked: shouldDisplayErrorWhenClicked ?? this.shouldDisplayErrorWhenClicked,
       passwordVisibleImage: passwordVisibleImage ?? this.passwordVisibleImage,
       passwordHiddenImage: passwordHiddenImage ?? this.passwordHiddenImage,
-      validationType: validationType ?? this.validationType,
       dateFormatterType: dateFormatterType ?? this.dateFormatterType,
     );
   }
 }
 
-/// Built-in validation types supported by the base text field.
-///
-/// Each value corresponds to a predefined validation rule:
-/// - [email]: Valid email format validation.
-/// - [url]: Valid URL format validation.
-/// - [dni]: DNI-like format requiring specific constraints.
-/// - [creditCard]: Numeric credit card format validation.
-enum HybridTextFieldValidationType {
-  email,
-  url,
-  dni,
-  creditCard,
-}
-
-/// Supported date formatting strategies for the text field.
-///
-/// Each type automatically applies an input formatter that enforces
-/// a specific date structure:
-///
-/// - [mmyy]: Formats input as `MM/YY`.
-/// - [mmyyyy]: Formats input as `MM/YYYY`.
-/// - [ddmmyyyy]: Formats input as `DD/MM/YYYY`.
-///
-/// These formatters control visual structure only. Additional
-/// validation rules may be required to ensure logical date correctness.
-enum HybridTextFieldFormatterDateType {
-  mmyy,
-  mmyyyy,
-  ddmmyyyy,
-}
+enum HybridTextFieldFormatterDateType { mmyy, mmyyyy, ddmmyyyy }

@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
-import 'custom_prefixes_list_style.dart';
 
 /// Defines the visual appearance of [CountryPickerDialog].
-///
-/// Covers:
-/// - Dialog shape, background and elevation.
-/// - Title and search field styling.
-/// - The embedded list (delegates to [CustomPrefixesListStyle]).
-
-class CountryPickerDialogStyle {
+class CountryPickerDialogTheme {
   /// Background color of the dialog surface.
   final Color backgroundColor;
 
@@ -24,32 +17,31 @@ class CountryPickerDialogStyle {
   /// Text alignment for the dialog title. Defaults to [TextAlign.center].
   final TextAlign titleAlignment;
 
-  /// Style for the search field. When `null`, defaults are used.
-  final CountryPickerSearchStyle searchStyle;
+  /// Style for the search field.
+  final CountryPickerSearchTheme searchStyle;
 
   /// Alignment of the embedded [CustomPhonePrefixesList].
   final AlignmentGeometry alignment;
 
-  const CountryPickerDialogStyle({
+  const CountryPickerDialogTheme({
     this.backgroundColor = Colors.white,
     this.elevation = 0,
     this.insetPadding = const EdgeInsets.all(30),
     this.titleStyle = const TextStyle(fontSize: 14),
     this.titleAlignment = TextAlign.center,
-    this.searchStyle = const CountryPickerSearchStyle(),
+    this.searchStyle = const CountryPickerSearchTheme(),
     this.alignment = Alignment.center,
   });
 
-  /// Returns a copy of this style with the given fields replaced.
-  CountryPickerDialogStyle copyWith({
+  CountryPickerDialogTheme copyWith({
     Color? backgroundColor,
     double? elevation,
     EdgeInsets? insetPadding,
     TextStyle? titleStyle,
     TextAlign? titleAlignment,
-    CountryPickerSearchStyle? searchStyle,
+    CountryPickerSearchTheme? searchStyle,
   }) {
-    return CountryPickerDialogStyle(
+    return CountryPickerDialogTheme(
       backgroundColor: backgroundColor ?? this.backgroundColor,
       elevation: elevation ?? this.elevation,
       insetPadding: insetPadding ?? this.insetPadding,
@@ -61,40 +53,35 @@ class CountryPickerDialogStyle {
 }
 
 /// Styling options for the search [TextField] inside [CountryPickerDialog].
-class CountryPickerSearchStyle {
+class CountryPickerSearchTheme {
   /// Style of the hint text.
   final TextStyle hintStyle;
 
   /// Style of the typed text inside the search field.
   final TextStyle textStyle;
 
-  /// Fill color of the search field. When `null`, the field is not filled.
+  /// Fill color of the search field.
   final Color fillColor;
 
   /// Border radius of the search field container.
   final BorderRadius borderRadius;
 
-  /// Border shown when the field is not focused. When `null`, defaults to
-  /// [OutlineInputBorder] with no explicit color.
+  /// Border shown when the field is not focused.
   final InputBorder border;
 
   /// Border shown when the field is focused.
   final InputBorder focusedBorder;
 
   /// Padding applied inside the search field.
-  ///
-  /// Defaults to `EdgeInsets.symmetric(horizontal: 12, vertical: 10)`.
   final EdgeInsetsGeometry contentPadding;
 
   /// Icon shown inside the search field.
-  ///
-  /// Defaults to [Icon(Icons.search)].
   final Widget suffixIcon;
 
   /// Padding around the entire search field widget.
   final EdgeInsetsGeometry outerPadding;
 
-  const CountryPickerSearchStyle({
+  const CountryPickerSearchTheme({
     this.hintStyle = const TextStyle(fontSize: 14),
     this.textStyle = const TextStyle(fontSize: 14),
     this.fillColor = Colors.white,
@@ -106,9 +93,7 @@ class CountryPickerSearchStyle {
     this.outerPadding = const EdgeInsets.all(10),
   });
 
-  /// Returns a copy of this style with the given fields replaced.
-  CountryPickerSearchStyle copyWith({
-    String? hintText,
+  CountryPickerSearchTheme copyWith({
     TextStyle? hintStyle,
     TextStyle? textStyle,
     Color? fillColor,
@@ -119,7 +104,7 @@ class CountryPickerSearchStyle {
     Widget? suffixIcon,
     EdgeInsetsGeometry? outerPadding,
   }) {
-    return CountryPickerSearchStyle(
+    return CountryPickerSearchTheme(
       hintStyle: hintStyle ?? this.hintStyle,
       textStyle: textStyle ?? this.textStyle,
       fillColor: fillColor ?? this.fillColor,

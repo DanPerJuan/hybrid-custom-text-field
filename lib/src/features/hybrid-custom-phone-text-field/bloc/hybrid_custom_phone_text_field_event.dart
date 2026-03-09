@@ -5,9 +5,11 @@ sealed class HybridCustomPhoneTextFieldEvent {}
 /// Event triggered when a phone text field is initialized, optionally with a selected country.
 class HybridCustomPhoneTextFieldStarted extends HybridCustomPhoneTextFieldEvent {
   final CountryEntity? selectedCountry;
+  final List<CountryEntity>? countries;
 
   HybridCustomPhoneTextFieldStarted({
     this.selectedCountry,
+    this.countries,
   });
 }
 
@@ -30,15 +32,4 @@ class HybridCustomPhoneTextFieldCountrySearched extends HybridCustomPhoneTextFie
   final String value;
 
   HybridCustomPhoneTextFieldCountrySearched({required this.value});
-}
-
-/// Fired when [HybridCustomTextFieldFormBloc] responds with the merged
-/// validation list for this field.
-///
-/// The field bloc replaces its current validation list with [mergedValidations]
-/// so form-level rules are active from the first keystroke onwards.
-final class HybridCustomPhoneTextFieldFormValidationsReceived extends HybridCustomPhoneTextFieldEvent {
-  final List<ValidationTextFieldEntity> mergedValidations;
-
-  HybridCustomPhoneTextFieldFormValidationsReceived({required this.mergedValidations});
 }

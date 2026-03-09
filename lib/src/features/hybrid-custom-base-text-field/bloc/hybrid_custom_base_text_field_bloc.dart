@@ -24,18 +24,28 @@ class HybridCustomBaseTextFieldBloc extends Bloc<HybridCustomBaseTextFieldEvent,
       await switch (event) {
         HybridCustomBaseTextFieldStarted() => _onStarted(event, emit),
         HybridCustomBaseTextFieldChanged() => _onChanged(event, emit),
-        HybridCustomBaseTextFieldFormValidationsReceived() => _onFormValidationReceived(event, emit),
       };
     });
   }
 
   /// Initializes the base text field by loading all validation rules derived
-  /// from the config via [ValidationUtils].
-  Future<void> _onStarted(HybridCustomBaseTextFieldStarted event, Emitter<HybridCustomBaseTextFieldState> emit) async {
+  /// from the config via [ValidationUtils], then validates against the empty
+  /// string so the form can know the correct initial error state without
+  /// waiting for the first user keystroke.
+  Future<void> _onStarted(
+    HybridCustomBaseTextFieldStarted event,
+    Emitter<HybridCustomBaseTextFieldState> emit,
+  ) async {
     final validations = ValidationUtils().getAllValidations(_config);
+    final hasError = validations.any((v) => !v.validate(''));
+    final error = hasError ? validations.firstWhere((v) => !v.validate('')) : null;
     emit(
       HybridCustomBaseTextFieldSuccess(
-        data: state.data.copyWith(validations: validations),
+        data: state.data.copyWith(
+          validations: validations,
+          hasError: hasError,
+          errorMessage: () => error?.errorMessage,
+        ),
       ),
     );
   }
@@ -43,12 +53,19 @@ class HybridCustomBaseTextFieldBloc extends Bloc<HybridCustomBaseTextFieldEvent,
   /// Runs all configured validation rules against the current value on every
   /// keystroke and updates [HybridCustomBaseTextFieldData.hasError] /
   /// [HybridCustomBaseTextFieldData.errorMessage] accordingly.
-  Future<void> _onChanged(HybridCustomBaseTextFieldChanged event, Emitter<HybridCustomBaseTextFieldState> emit) async {
-    final hasError = state.data.validations.any((v) => !v.validate(event.value.trim()));
+  Future<void> _onChanged(
+    HybridCustomBaseTextFieldChanged event,
+    Emitter<HybridCustomBaseTextFieldState> emit,
+  ) async {
+    final hasError = state.data.validations.any(
+      (v) => !v.validate(event.value.trim()),
+    );
 
     ValidationTextFieldEntity? error;
     if (hasError) {
-      error = state.data.validations.firstWhere((v) => !v.validate(event.value.trim()));
+      error = state.data.validations.firstWhere(
+        (v) => !v.validate(event.value.trim()),
+      );
     }
 
     emit(
@@ -57,28 +74,6 @@ class HybridCustomBaseTextFieldBloc extends Bloc<HybridCustomBaseTextFieldEvent,
           hasError: hasError,
           errorMessage: () => hasError ? error!.errorMessage : null,
         ),
-      ),
-    );
-  }
-
-  /// When the form sends its validations via [HybridCustomBaseTextFieldFormValidationsReceived],
-  /// this method combines them with the text field's existing validations.
-  /// Field-level validations are preserved first, ensuring they take priority over form-level rules.
-  ///
-  /// The resulting merged list of validations is then emitted in the [HybridCustomBaseTextFieldSuccess] state,
-  /// so the text field can immediately apply the new rules.
-  Future<void> _onFormValidationReceived(
-    HybridCustomBaseTextFieldFormValidationsReceived event,
-    Emitter<HybridCustomBaseTextFieldState> emit,
-  ) async {
-    final mergedValidations = [
-      ...state.data.validations,
-      ...event.mergedValidations,
-    ];
-
-    emit(
-      HybridCustomBaseTextFieldSuccess(
-        data: state.data.copyWith(validations: mergedValidations),
       ),
     );
   }
