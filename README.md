@@ -890,3 +890,19 @@ HybridCustomTextFieldForm(
   ],
 )
 ```
+
+## Credits
+
+Built with:
+
+- [flutter_bloc](https://pub.dev/packages/flutter_bloc)
+
+## Author ✒️
+
+- **Daniela Perez Juan** - _Flutter Developer_ - [dperez@laberit.com](dperez@laberit.com)
+
+---
+
+With ❤️ by Laberit Flutter Team 😊
+
+![Rudo Apps](https://rudo.es/wp-content/uploads/logo-rudo.svg)
