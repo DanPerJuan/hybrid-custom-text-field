@@ -6,7 +6,11 @@ repository: https://github.com/rudoapps/hybrid-custom-text-field.git
 issue_tracker: https://github.com/rudoapps/hybrid-custom-text-field/issues
 documentation: https://github.com/rudoapps/hybrid-custom-text-field#readme
 topics:
-  - calendar
+  - text field
+  - custom text field
+  - country
+  - phone
+  - search
 
 environment:
   sdk: ">=3.8.6 <4.0.0"
